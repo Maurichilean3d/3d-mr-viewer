@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MR Studio Diamond v3.5 (Flip + Red Protect)</title>
+  <title>MR Studio Diamond v6.0 (Grey + Precision)</title>
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
   <style>
-    /* ESTILOS DE INTERFAZ (UI LIMPIA) */
+    /* UI DARK & CLEAN */
     * { box-sizing: border-box; user-select: none; }
     body { margin: 0; overflow: hidden; background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; color: #eee; }
     #c { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; z-index: 0; }
@@ -27,6 +27,7 @@
 
     .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     label { font-size: 12px; flex: 1; color: #ccc; white-space: nowrap; font-weight: 500; }
+    /* Sliders personalizados */
     input[type=range] { flex: 2; height: 4px; background: #333; border-radius: 2px; accent-color: #6c5ce7; cursor: pointer; }
     .val { width: 40px; text-align: right; font-size: 11px; font-family: monospace; color: #a29bfe; }
     select, input[type=file] { width: 100%; background: #1e1e24; border: 1px solid #444; color: #eee; padding: 8px; border-radius: 8px; font-size: 11px; outline: none; }
@@ -42,7 +43,6 @@
 
     .toggle-ui { position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; background: #1e1e24; border-radius: 50%; display: grid; place-items: center; font-size: 20px; border: 1px solid #555; z-index: 200; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
     #vrBtn { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 14px 45px; background: linear-gradient(135deg, #6c5ce7, #0984e3); color: white; border-radius: 50px; border: none; font-weight: 800; cursor: pointer; z-index: 1000; display: none; box-shadow: 0 0 30px rgba(108,92,231,0.6); animation: pulse 2s infinite; }
-    @keyframes pulse { 0% {box-shadow: 0 0 20px rgba(108,92,231,0.6);} 50% {box-shadow: 0 0 40px rgba(108,92,231,0.8);} 100% {box-shadow: 0 0 20px rgba(108,92,231,0.6);} }
     
     .loader { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 5000; display: none; place-items: center; flex-direction: column; gap: 15px; color: #a29bfe; font-size: 14px; font-weight: bold; letter-spacing: 2px; }
     .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: #a29bfe; border-radius: 50%; animation: spin 1s infinite linear; }
@@ -55,15 +55,19 @@
 <div class="loader" id="loader"><div class="spinner"></div><span>CARGANDO...</span></div>
 
 <div class="ui-panel" id="ui">
-  <h2>🥽 MR Studio Diamond v3.5</h2>
+  <h2>🥽 MR Studio Diamond v6</h2>
 
   <div class="sec-head">📂 Archivos <button class="warn" style="padding:4px; font-size:10px; width:auto; flex:0;" onclick="fileInput.click()">+ IMPORTAR</button></div>
   <input type="file" id="fileInput" accept="image/*,video/*,.gif,.glb,.gltf,.fbx,.obj" multiple style="display:none;" />
-  
   <div class="layer-list" id="layerList"></div>
 
+  <div class="row" style="background:rgba(108,92,231,0.1); padding:8px; border-radius:6px; border:1px solid rgba(108,92,231,0.3);">
+    <label style="color:#a29bfe; font-weight:bold;">🔍 Modo Precisión (Lento)</label>
+    <input type="checkbox" id="checkPrecision" style="flex:0; width:18px; height:18px;">
+  </div>
+
   <div id="generalControls">
-      <div class="sec-head">📍 Proyección</div>
+      <div class="sec-head">📍 Proyección & Geometría</div>
       <div class="row">
         <select id="projSelect">
           <option value="plane">Plano 2D</option>
@@ -72,15 +76,9 @@
         </select>
       </div>
       
-      <div class="sec-head">📏 Transformación</div>
-      <div class="row">
-        <label>Escala</label><input type="range" id="scale" min="0.1" max="10" step="0.05" value="1">
-        <span class="val" id="v_scale">1.0</span>
-      </div>
-      <div class="row">
-        <label>Modo Espejo (Flip H)</label>
-        <input type="checkbox" id="checkFlip" style="flex:0; width:18px; height:18px;">
-      </div>
+      <div class="row"><label>Tamaño</label><input type="range" id="scale" min="0.1" max="10" step="0.05" value="1"><span class="val" id="v_scale">1.0</span></div>
+      <div class="row"><label style="color:#a29bfe">Estirar Y</label><input type="range" id="stretchY" min="0.5" max="2.0" step="0.01" value="1.0"><span class="val" id="v_stretchY">1.0</span></div>
+      <div class="row"><label>Modo Espejo</label><input type="checkbox" id="checkFlip" style="flex:0; width:18px; height:18px;"></div>
       
       <div id="posControls">
         <div class="row"><label>Distancia</label><input type="range" id="dist" min="0" max="15" step="0.1" value="2"><span class="val" id="v_dist">2.0</span></div>
@@ -91,43 +89,43 @@
 
   <div id="mediaControls" style="display:none;">
     
+    <div class="sec-head">🔊 Audio</div>
+    <div class="row"><label>Volumen</label><input type="range" id="volume" min="0" max="1" step="0.05" value="0"><span class="val" id="v_volume">0%</span></div>
+
     <div class="sec-head">🎨 Color & Imagen</div>
     <div class="row"><label>Brillo</label><input type="range" id="brightness" min="-1" max="1" step="0.05" value="0"><span class="val" id="v_brightness">0.0</span></div>
     <div class="row"><label>Contraste</label><input type="range" id="contrast" min="0" max="3" step="0.1" value="1"><span class="val" id="v_contrast">1.0</span></div>
     <div class="row"><label>Saturación</label><input type="range" id="saturation" min="0" max="3" step="0.1" value="1"><span class="val" id="v_saturation">1.0</span></div>
     <div class="row"><label>Gamma</label><input type="range" id="gamma" min="0.1" max="3" step="0.1" value="1"><span class="val" id="v_gamma">1.0</span></div>
 
-    <div class="sec-head">🖼️ Ajuste Visual</div>
-    <div class="row"><label>Desfase X</label><input type="range" id="offsetX" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetX">0.0</span></div>
-    <div class="row"><label>Desfase Y</label><input type="range" id="offsetY" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetY">0.0</span></div>
-
-    <div class="sec-head">🟩 Chroma Key Pro (Face Protect)</div>
+    <div class="sec-head">🟩 Chroma Key (Grey + Face Protect)</div>
     <div class="row">
       <label>Activar</label> <input type="checkbox" id="chromaActive" style="flex:0; width:18px; height:18px;">
       <label style="margin-left:15px">Invertir</label> <input type="checkbox" id="chromaInvert" style="flex:0; width:18px; height:18px;">
     </div>
     
     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin:8px 0; border:1px solid rgba(255,255,255,0.05);">
-      <div class="row"><label style="color:#ff7675">Rojo</label><input type="range" id="keyR" min="0" max="1" step="0.01" value="0"><span class="val" id="v_keyR">0.0</span></div>
-      <div class="row"><label style="color:#55efc4">Verde</label><input type="range" id="keyG" min="0" max="1" step="0.01" value="1"><span class="val" id="v_keyG">1.0</span></div>
-      <div class="row"><label style="color:#74b9ff">Azul</label><input type="range" id="keyB" min="0" max="1" step="0.01" value="0"><span class="val" id="v_keyB">0.0</span></div>
-      <div id="colorPrev" style="height:8px; width:100%; border-radius:4px; background:#0f0; margin-top:6px; transition:0.3s;"></div>
+      <div class="row"><label style="color:#ff7675">Rojo</label><input type="range" id="keyR" min="0" max="1" step="0.01" value="0.5"><span class="val" id="v_keyR">0.5</span></div>
+      <div class="row"><label style="color:#55efc4">Verde</label><input type="range" id="keyG" min="0" max="1" step="0.01" value="0.5"><span class="val" id="v_keyG">0.5</span></div>
+      <div class="row"><label style="color:#74b9ff">Azul</label><input type="range" id="keyB" min="0" max="1" step="0.01" value="0.5"><span class="val" id="v_keyB">0.5</span></div>
+      <div id="colorPrev" style="height:8px; width:100%; border-radius:4px; background:#888; margin-top:6px; transition:0.3s;"></div>
+      <div style="text-align:center; font-size:9px; color:#666; margin-top:4px;">(Pon R,G,B en 0.5 aprox para Gris)</div>
     </div>
 
-    <div class="row"><label>Similitud</label><input type="range" id="sim" min="0" max="1" step="0.001" value="0.4"><span class="val" id="v_sim">0.4</span></div>
+    <div class="row"><label>Similitud</label><input type="range" id="sim" min="0" max="1" step="0.001" value="0.2"><span class="val" id="v_sim">0.2</span></div>
     <div class="row"><label>Suavizado</label><input type="range" id="smooth" min="0" max="0.5" step="0.001" value="0.05"><span class="val" id="v_smooth">0.05</span></div>
     <div class="row"><label>Opacidad</label><input type="range" id="opacity" min="0" max="1" step="0.05" value="1"><span class="val" id="v_opacity">1.0</span></div>
   </div>
 
   <div class="btn-group" style="margin-top:20px;">
     <button class="primary" onclick="centerActive()">🎯 Centrar</button>
-    <button class="warn" onclick="reloadVideo()">🔄 Recargar Video</button>
+    <button class="warn" onclick="reloadVideo()">🔄 Recargar</button>
     <button class="danger" onclick="deleteActive()">🗑️ Borrar</button>
   </div>
   
   <div class="row" style="margin-top:20px; font-size:11px; color:#888; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
     <label><input type="checkbox" id="checkGizmo" checked> Gizmos</label>
-    <label title="Requiere reiniciar sesión VR"><input type="checkbox" id="checkOcclusion" checked> Oclusión (Mundo Real)</label>
+    <label><input type="checkbox" id="checkOcclusion" checked> Oclusión</label>
   </div>
 </div>
 
@@ -150,21 +148,13 @@ let objects = [];
 let activeId = null;
 let transformControl;
 
-const ctrl = {
-  right: { gripped: false, lastPos: new THREE.Vector3(), lastQuat: new THREE.Quaternion(), lastTrig: false, lastBtn: false },
-  left: { gripped: false },
-  gesture: { active: false, startDist: 0, startScale: 1 }
-};
+// Controles VR
+const ctrl = { right: { gripped: false, lastPos: new THREE.Vector3(), lastQuat: new THREE.Quaternion(), lastTrig: false, lastBtn: false }, left: { gripped: false }, gesture: { active: false, startDist: 0, startScale: 1 } };
 let rightRay, rayCursor, hoverId;
 
-const vert = `
-varying vec2 vUv; 
-uniform vec2 offset; 
-void main() { 
-    vUv = uv + offset; 
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
-}`;
+const vert = `varying vec2 vUv; uniform vec2 offset; void main() { vUv = uv + offset; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 
+// --- SHADER HÍBRIDO (CHROMA + LUMA PARA GRIS) ---
 const frag = `
 uniform sampler2D map;
 uniform bool chromaEnabled, chromaInvert;
@@ -174,6 +164,7 @@ uniform float brightness, contrast, saturation, gamma;
 
 varying vec2 vUv;
 
+// Función RGB a HSV
 vec3 rgb2hsv(vec3 c) {
     vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -183,6 +174,7 @@ vec3 rgb2hsv(vec3 c) {
     return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
+// Ajustes de Imagen
 vec3 adjustColor(vec3 color) {
     color += brightness;
     color = (color - 0.5) * contrast + 0.5;
@@ -198,32 +190,48 @@ void main() {
     float alpha = tex.a * opacity;
 
     if (chromaEnabled) {
-        vec3 hsv = rgb2hsv(col);
-        vec3 kHsv = rgb2hsv(keyColor);
+        // DETECCIÓN INTELIGENTE DE MODO
+        // Si el color clave tiene muy baja saturación (Gris/Blanco/Negro), usamos distancia Euclidiana (Luma)
+        // Si tiene color (Verde/Azul), usamos distancia HSV (Hue)
         
-        float hueDist = abs(hsv.x - kHsv.x);
-        if (hueDist > 0.5) hueDist = 1.0 - hueDist;
-        float dist = sqrt(pow(hueDist * 2.0, 2.0) + pow(hsv.y - kHsv.y, 2.0)); 
+        vec3 keyHSV = rgb2hsv(keyColor);
+        float dist = 0.0;
+        
+        bool isGreyKey = (keyHSV.y < 0.15); // Saturación baja = Gris
+
+        if (isGreyKey) {
+            // MODO LUMA / DIFERENCIA (Para fondos grises)
+            // Calculamos la distancia directa entre el color del pixel y el gris clave
+            dist = distance(col, keyColor);
+            
+            // Ajustamos la curva para que sea más fácil seleccionar grises
+            // Multiplicamos para sensibilidad
+            dist = dist * 1.5; 
+
+        } else {
+            // MODO CHROMA TRADICIONAL (Para Verde/Azul)
+            vec3 hsv = rgb2hsv(col);
+            float hueDist = abs(hsv.x - keyHSV.x);
+            if (hueDist > 0.5) hueDist = 1.0 - hueDist;
+            dist = sqrt(pow(hueDist * 2.0, 2.0) + pow(hsv.y - keyHSV.y, 2.0));
+        }
         
         float mask = smoothstep(similarity, similarity + smoothness, dist);
         
-        // PROTECCIÓN DE ROJOS (Ojos/Labios)
-        float protection = 0.0;
-        if(keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
-            protection = (col.r - col.g) * 3.0; 
-        } else if(keyColor.b > keyColor.r && keyColor.b > keyColor.g) {
-            protection = (col.r - col.b) * 3.0;
+        // PROTECCIÓN DE ROJOS (Solo en modo Color, en gris no aplica igual)
+        if (!isGreyKey) {
+             float protection = 0.0;
+             if(keyColor.g > keyColor.r && keyColor.g > keyColor.b) protection = (col.r - col.g) * 3.0; 
+             else if(keyColor.b > keyColor.r && keyColor.b > keyColor.g) protection = (col.r - col.b) * 3.0;
+             if(protection > 0.0) mask = clamp(mask + protection, 0.0, 1.0);
         }
-
-        if(protection > 0.0) mask = clamp(mask + protection, 0.0, 1.0);
 
         if (!chromaInvert) {
             alpha *= mask;
-            if(mask < 0.9) {
+            // Despill básico
+            if(!isGreyKey && mask < 0.9) {
                float maxRB = max(col.r, col.b);
-               float maxRG = max(col.r, col.g);
                if (keyColor.g > keyColor.r && keyColor.g > keyColor.b && col.g > maxRB) col.g = mix(col.g, maxRB, 1.0-mask); 
-               else if (keyColor.b > keyColor.g && keyColor.b > keyColor.r && col.b > maxRG) col.b = mix(col.b, maxRG, 1.0-mask);
             }
         } else {
             alpha *= (1.0 - mask);
@@ -245,7 +253,6 @@ function init() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 2000);
-  
   scene.add(new THREE.AmbientLight(0xffffff, 1.2));
   const d = new THREE.DirectionalLight(0xffffff, 1.5); d.position.set(2, 5, 2); scene.add(d);
 
@@ -277,9 +284,7 @@ document.getElementById('fileInput').addEventListener('change', async e => {
       else if(n.match(/\.gif$/)) await loadGif(f, n);
       else if(f.type.startsWith('video/') || n.includes('360')) await loadVideo(url, n);
       else if(f.type.startsWith('image/')) await loadImg(url, n);
-    } catch(err) { 
-      console.error('Error al cargar archivo:', f.name, err); 
-    }
+    } catch(err) { console.error('Error:', err); }
   }
   toggleLoader(false);
   e.target.value = '';
@@ -288,7 +293,7 @@ document.getElementById('fileInput').addEventListener('change', async e => {
 async function loadVideo(url, name) {
   const vid = document.createElement('video');
   vid.src = url; vid.crossOrigin = 'anonymous'; 
-  vid.loop = true; vid.muted = true; vid.playsInline = true;
+  vid.loop = true; vid.muted = true; vid.playsInline = true; 
   vid.style.display = 'none'; document.body.appendChild(vid);
 
   await new Promise(resolve => {
@@ -298,27 +303,18 @@ async function loadVideo(url, name) {
 
   const tex = new THREE.VideoTexture(vid);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
   tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
   
   let proj = 'plane';
-  if(name.includes('360')) proj='360';
-  else if(name.includes('180')) proj='180';
-
+  if(name.includes('360')) proj='360'; else if(name.includes('180')) proj='180';
   const ar = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth/vid.videoHeight : 1.77;
 
   const mesh = createMesh(proj, tex, ar);
   const obj = { id: uid(), mesh, name, type:'video', video:vid, tex, settings: defSettings() };
   obj.settings.projection = proj;
   
-  if(proj !== 'plane') {
-      obj.mesh.position.set(0, 0, 0);
-      obj.settings.scale = 1; 
-      obj.settings.dist = 0;
-  } else {
-      obj.mesh.position.set(0, 1.6, -2);
-      obj.settings.dist = 2;
-  }
+  if(proj !== 'plane') { obj.mesh.position.set(0, 1.6, 0); obj.settings.dist=0; } 
+  else { obj.mesh.position.set(0, 1.6, -2); obj.settings.dist=2; }
 
   addObj(obj);
 }
@@ -326,29 +322,19 @@ async function loadVideo(url, name) {
 async function loadGif(file, name) {
   const buf = await file.arrayBuffer();
   // @ts-ignore
-  let R = window.GifReader || (window.Omggif ? window.Omggif.GifReader : null);
-  if(!R) return;
+  let R = window.GifReader || (window.Omggif ? window.Omggif.GifReader : null); if(!R) return;
   const r = new R(new Uint8Array(buf));
-  const w=r.width, h=r.height;
-  const cvs=document.createElement('canvas'); cvs.width=w; cvs.height=h;
+  const w=r.width, h=r.height; const cvs=document.createElement('canvas'); cvs.width=w; cvs.height=h;
   const ctx=cvs.getContext('2d'); const dat=ctx.createImageData(w,h);
   const tex=new THREE.CanvasTexture(cvs); tex.colorSpace=THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-  
-  const mesh = createMesh('plane', tex, w/h);
-  mesh.position.set(0, 1.6, -2);
-  const obj = { id:uid(), mesh, name, type:'gif', settings:defSettings(), gif:{r,ctx,dat,tex,f:0,num:r.numFrames(),t:0} };
-  addObj(obj);
+  const mesh = createMesh('plane', tex, w/h); mesh.position.set(0, 1.6, -2);
+  addObj({ id:uid(), mesh, name, type:'gif', settings:defSettings(), gif:{r,ctx,dat,tex,f:0,num:r.numFrames(),t:0} });
 }
 
 async function loadImg(url, name) {
-  const tex = await new THREE.TextureLoader().loadAsync(url);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-  const mesh = createMesh('plane', tex, tex.image.width/tex.image.height);
-  mesh.position.set(0, 1.6, -2);
-  const obj = { id:uid(), mesh, name, type:'image', tex, settings:defSettings() };
-  addObj(obj);
+  const tex = await new THREE.TextureLoader().loadAsync(url); tex.colorSpace = THREE.SRGBColorSpace;
+  const mesh = createMesh('plane', tex, tex.image.width/tex.image.height); mesh.position.set(0, 1.6, -2);
+  addObj({ id:uid(), mesh, name, type:'image', tex, settings:defSettings() });
 }
 
 async function load3D(url, name, type) {
@@ -356,66 +342,39 @@ async function load3D(url, name, type) {
   if(type==='gltf') m=(await new GLTFLoader().loadAsync(url)).scene;
   else if(type==='fbx') m=await new FBXLoader().loadAsync(url);
   else m=await new OBJLoader().loadAsync(url);
-  
-  const box = new THREE.Box3().setFromObject(m);
-  const sz = box.getSize(new THREE.Vector3()).length();
-  const sc = (sz>0 && sz<1000) ? 2/sz : 1; 
-  m.scale.setScalar(sc);
-  m.position.set(0, 1, -2);
+  const box = new THREE.Box3().setFromObject(m); const sz = box.getSize(new THREE.Vector3()).length(); const sc = (sz>0 && sz<1000) ? 2/sz : 1; 
+  m.scale.setScalar(sc); m.position.set(0, 1, -2);
   m.traverse(c=>{ if(c.isMesh) { c.material.transparent=true; c.material.depthWrite=true; c.castShadow=true; }});
-  
-  const obj = { id:uid(), mesh:m, name, type:'model', settings:defSettings() };
-  obj.baseScale = sc;
-  addObj(obj);
+  addObj({ id:uid(), mesh:m, name, type:'model', settings:defSettings(), baseScale: sc });
 }
 
 function createMesh(proj, tex, aspect) {
   let geo, side=THREE.DoubleSide;
-  
-  if(proj === '360') {
-    geo = new THREE.SphereGeometry(20, 64, 64);
-    side = THREE.BackSide; 
-  } else if(proj === '180') {
-    geo = new THREE.SphereGeometry(20, 64, 64, 0, Math.PI);
-    geo.rotateY(-Math.PI/2);
-    side = THREE.BackSide;
-  } else {
-    geo = new THREE.PlaneGeometry(aspect, 1);
-  }
+  if(proj === '360') { geo = new THREE.SphereGeometry(20, 64, 64); side = THREE.BackSide; } 
+  else if(proj === '180') { geo = new THREE.SphereGeometry(20, 64, 64, 0, Math.PI); geo.rotateY(-Math.PI/2); side = THREE.BackSide; } 
+  else { geo = new THREE.PlaneGeometry(aspect, 1); }
 
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       map: { value: tex },
-      chromaEnabled:{value:false}, chromaInvert:{value:false}, keyColor:{value:new THREE.Color(0,1,0)},
-      similarity:{value:0.4}, smoothness:{value:0.1}, 
-      offset:{value:new THREE.Vector2(0,0)}, 
-      opacity:{value:1.0},
+      chromaEnabled:{value:false}, chromaInvert:{value:false}, keyColor:{value:new THREE.Color(0.5,0.5,0.5)},
+      similarity:{value:0.2}, smoothness:{value:0.05}, 
+      offset:{value:new THREE.Vector2(0,0)}, opacity:{value:1.0},
       brightness:{value:0.0}, contrast:{value:1.0}, saturation:{value:1.0}, gamma:{value:1.0}
     },
-    vertexShader: vert, fragmentShader: frag,
-    transparent: true, side: side, 
-    depthWrite: (proj==='plane'), 
-    depthTest: true
+    vertexShader: vert, fragmentShader: frag, transparent: true, side: side, depthWrite: (proj==='plane'), depthTest: true
   });
-  
-  const mesh = new THREE.Mesh(geo, mat);
-  if(proj !== 'plane') {
-      mesh.frustumCulled = false; 
-      mesh.renderOrder = -1; 
-  }
-  return mesh;
+  return new THREE.Mesh(geo, mat);
 }
 
 function defSettings() {
-    return { 
-        scale:1, dist:2, height:1.6, rotY:0, projection:'plane', flipX: false,
-        chromaEnabled:false, chromaInvert:false, keyR:0, keyG:1, keyB:0, sim:0.4, smooth:0.05, 
-        offsetX:0, offsetY:0, opac:1,
-        brightness:0, contrast:1, saturation:1, gamma:1
-    }; 
+    return { scale:1, stretchY:1.0, dist:2, height:1.6, rotY:0, projection:'plane', flipX: false,
+        chromaEnabled:false, chromaInvert:false, keyR:0.5, keyG:0.5, keyB:0.5, sim:0.2, smooth:0.05, 
+        offsetX:0, offsetY:0, opac:1, volume: 0,
+        brightness:0, contrast:1, saturation:1, gamma:1 }; 
 }
 function uid() { return Math.random().toString(36).substr(2,9); }
-function addObj(obj) { scene.add(obj.mesh); objects.push(obj); updateList(); selectObj(obj.id); }
+function addObj(obj) { scene.add(obj.mesh); objects.push(obj); updateList(); selectObj(obj.id); updateObj('scale', obj.settings.scale); }
 
 function updateObj(k, v) {
   const o = objects.find(x=>x.id===activeId); if(!o) return;
@@ -424,108 +383,104 @@ function updateObj(k, v) {
 
   if(k==='projection') {
     scene.remove(m);
-    let ar=1.77; 
-    if(o.video) ar=o.video.videoWidth/o.video.videoHeight;
-    else if(o.tex && o.tex.image) ar=o.tex.image.width/o.tex.image.height;
-    
+    let ar=1.77; if(o.video) ar=o.video.videoWidth/o.video.videoHeight; else if(o.tex && o.tex.image) ar=o.tex.image.width/o.tex.image.height;
     const nm = createMesh(v, o.tex||m.material.uniforms?.map.value, ar);
-    nm.rotation.copy(m.rotation);
-    o.mesh=nm; 
-    
-    if(v!=='plane'){ 
-        nm.position.set(0,0,0); 
-        nm.scale.set(s.scale, s.scale, s.scale); 
-        o.settings.dist=0; 
-    } else { 
-        nm.position.set(0,1.6,-2); 
-        nm.scale.set(s.scale, s.scale, s.scale); 
-        o.settings.dist=2; 
-    }
-    
-    scene.add(nm); selectObj(o.id); return;
+    nm.rotation.copy(m.rotation); o.mesh=nm; 
+    if(v!=='plane'){ nm.position.set(0,1.6,0); o.settings.dist=0; } else { nm.position.set(0,1.6,-2); o.settings.dist=2; }
+    scene.add(nm); updateObj('scale', s.scale); selectObj(o.id); return;
   }
 
-  // LOGICA DE ESCALA + ESPEJO (FLIP)
-  if(k==='scale' || k==='flipX') {
+  if(k==='scale' || k==='flipX' || k==='stretchY') {
      const bs = o.baseScale || 1;
-     // Si flipX es true, multiplicamos por -1
-     const dir = s.flipX ? -1 : 1;
-     m.scale.set(s.scale * bs * dir, s.scale * bs, s.scale * bs);
+     const isImmersive = (s.projection === '360' || s.projection === '180');
+     const scX = s.scale * bs * (isImmersive?-1:1) * (s.flipX?-1:1);
+     const scY = s.scale * bs * s.stretchY;
+     m.scale.set(scX, scY, s.scale * bs);
   }
   
-  if(s.projection==='plane' || o.type==='model') {
-      if(k==='dist') m.position.z = -s.dist;
-      if(k==='height') m.position.y = s.height;
-  } else {
-      m.position.set(0,0,0);
-  }
-
+  if(k==='dist') m.position.z = -s.dist;
+  if(k==='height') m.position.y = s.height;
+  if(s.projection !== 'plane' && o.type !== 'model') { m.position.x = 0; m.position.z = 0; }
   if(k==='rotY') m.rotation.y = THREE.MathUtils.degToRad(s.rotY) + (s.projection==='180'?-Math.PI/2:0);
+
+  if(k==='volume' && o.video) {
+      o.video.volume = s.volume;
+      o.video.muted = (s.volume === 0);
+  }
 
   if(o.type !== 'model' && m.material.uniforms) {
     const u=m.material.uniforms;
     u.chromaEnabled.value=s.chromaEnabled; u.chromaInvert.value=s.chromaInvert;
     u.keyColor.value.setRGB(s.keyR, s.keyG, s.keyB);
     u.similarity.value=s.sim; u.smoothness.value=s.smooth; 
-    u.offset.value.set(s.offsetX, s.offsetY); 
-    u.opacity.value=s.opac;
-    
-    u.brightness.value=s.brightness;
-    u.contrast.value=s.contrast;
-    u.saturation.value=s.saturation;
-    u.gamma.value=s.gamma;
+    u.offset.value.set(s.offsetX, s.offsetY); u.opacity.value=s.opac;
+    u.brightness.value=s.brightness; u.contrast.value=s.contrast; u.saturation.value=s.saturation; u.gamma.value=s.gamma;
   }
 }
 
+// SISTEMA DE PRECISIÓN (SLIDERS)
+let precisionMode = false;
+document.getElementById('checkPrecision').addEventListener('change', e=>{ precisionMode = e.target.checked; });
+
 const bind = (id, k, type='float') => {
-  document.getElementById(id).addEventListener('input', e=>{
-    let v=e.target.value; if(type==='float')v=parseFloat(v); else if(type==='bool')v=e.target.checked;
+  const el = document.getElementById(id);
+  const ev = (type==='bool')?'change':'input';
+  el.addEventListener(ev, e=>{
+    let v = e.target.value; 
+    if(type==='float') {
+        v=parseFloat(v);
+        // Si está en modo precisión y estamos moviendo algo de geometría
+        if(precisionMode && ['scale','dist','height','stretchY'].includes(k)) {
+            // Calculamos el delta basándonos en el paso original
+            // Hack simple: reescribimos el valor del input para que se mueva lento
+            // O mejor: El input mueve el valor real, pero visualmente...
+            // Simplificación: Solo permitimos pasos muy finos si el slider lo permite.
+            // Para v6, haremos que el slider tenga un 'step' dinámico
+        }
+    } 
+    else if(type==='bool') v=e.target.checked;
     updateObj(k,v); syncUI();
   });
+  
+  // LOGICA PRECISIÓN: Cambiar el step dinámicamente
+  if(['scale','dist','height','stretchY','offsetX','offsetY'].includes(k)) {
+      document.getElementById('checkPrecision').addEventListener('change', ch => {
+          el.step = ch.target.checked ? "0.001" : (id==='scale'?"0.05":"0.1");
+      });
+  }
 };
-bind('projSelect','projection','str'); bind('scale','scale'); bind('dist','dist'); bind('height','height'); bind('rotY','rotY');
+
+bind('projSelect','projection','str'); bind('scale','scale'); bind('stretchY','stretchY');
+bind('dist','dist'); bind('height','height'); bind('rotY','rotY');
 bind('chromaActive','chromaEnabled','bool'); bind('chromaInvert','chromaInvert','bool');
 bind('keyR','keyR'); bind('keyG','keyG'); bind('keyB','keyB');
 bind('sim','sim'); bind('smooth','smooth'); 
-bind('offsetX','offsetX'); bind('offsetY','offsetY'); 
-bind('opacity','opac');
+bind('offsetX','offsetX'); bind('offsetY','offsetY'); bind('opacity','opac');
 bind('brightness','brightness'); bind('contrast','contrast'); bind('saturation','saturation'); bind('gamma','gamma');
-bind('checkFlip', 'flipX', 'bool'); // BIND DEL CHECKBOX ESPEJO
+bind('checkFlip', 'flipX', 'bool'); bind('volume','volume');
 
 function selectObj(id) {
   activeId = id;
   const o = objects.find(x=>x.id===id);
   if(o) {
-    if(o.settings.projection === 'plane' || o.type === 'model') transformControl.attach(o.mesh);
-    else transformControl.detach();
-
-    const isMedia = (o.type !== 'model');
-    document.getElementById('mediaControls').style.display = isMedia ? 'block' : 'none';
-    document.getElementById('generalControls').style.display = 'block';
+    if(o.settings.projection === 'plane' || o.type === 'model') transformControl.attach(o.mesh); else transformControl.detach();
+    document.getElementById('mediaControls').style.display = (o.type !== 'model') ? 'block' : 'none';
     syncUI();
-  } else {
-    transformControl.detach();
-    document.getElementById('mediaControls').style.display = 'none';
-  }
+  } else { transformControl.detach(); document.getElementById('mediaControls').style.display = 'none'; }
   updateList();
 }
 
 function syncUI() {
   const o = objects.find(x=>x.id===activeId); if(!o) return;
   const s = o.settings;
-  const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; const t=document.getElementById('v_'+id); if(t)t.innerText=(typeof v==='number')?v.toFixed(2):v; };
+  const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; const t=document.getElementById('v_'+id); if(t)t.innerText=(typeof v==='number')?(k=>id==='volume'?Math.round(k*100)+'%':k.toFixed(2))(v):v; };
 
   if(o.type!=='model') document.getElementById('projSelect').value = s.projection;
-  
-  const is360 = (s.projection === '360' || s.projection === '180');
-  document.getElementById('posControls').style.display = is360 ? 'none' : 'block';
+  document.getElementById('posControls').style.display = (s.projection === '360' || s.projection === '180') ? 'block' : 'block';
 
-  set('scale',s.scale); 
-  if(!is360) {
-    set('dist',Math.abs(o.mesh.position.z)); set('height',o.mesh.position.y);
-  }
-  set('rotY',s.rotY);
-  document.getElementById('checkFlip').checked = s.flipX; // SYNC ESPEJO
+  set('scale',s.scale); set('stretchY',s.stretchY); set('dist',Math.abs(o.mesh.position.z)); set('height',o.mesh.position.y); set('rotY',s.rotY);
+  document.getElementById('checkFlip').checked = s.flipX;
+  set('volume', s.volume);
   
   if(o.type !== 'model' && o.mesh.material.uniforms) {
     document.getElementById('chromaActive').checked = s.chromaEnabled;
@@ -540,134 +495,65 @@ function syncUI() {
 }
 
 window.centerActive = () => { const o=objects.find(x=>x.id===activeId); if(o && (o.settings.projection==='plane'||o.type==='model')){ o.mesh.position.set(0,1.6,-2); o.mesh.rotation.set(0,0,0); o.settings.dist=2; o.settings.height=1.6; syncUI(); }};
-window.reloadVideo = () => {
-    const o=objects.find(x=>x.id===activeId);
-    if(o && o.video) { o.video.pause(); o.video.currentTime=0; o.video.play().catch(e=>console.log(e)); }
-};
-window.deleteActive = () => {
-  const i = objects.findIndex(x=>x.id===activeId); if(i>-1) { const o=objects[i]; scene.remove(o.mesh); if(o.video){o.video.pause();o.video.remove();} if(o.mesh.geometry)o.mesh.geometry.dispose(); objects.splice(i,1); activeId=null; selectObj(null); }
-};
-function updateList() {
-  const l=document.getElementById('layerList'); l.innerHTML='';
-  objects.forEach(o=>{
-    const d=document.createElement('div'); d.className=`layer-item ${o.id===activeId?'active':''}`;
-    d.innerHTML=`<span>${o.type==='model'?'📦':'🎬'}</span> <span>${o.name}</span>`; d.onclick=()=>selectObj(o.id); l.appendChild(d);
-  });
-}
+window.reloadVideo = () => { const o=objects.find(x=>x.id===activeId); if(o && o.video) { o.video.pause(); o.video.currentTime=0; o.video.play().catch(e=>console.log(e)); }};
+window.deleteActive = () => { const i = objects.findIndex(x=>x.id===activeId); if(i>-1) { const o=objects[i]; scene.remove(o.mesh); if(o.video){o.video.pause();o.video.remove();} if(o.mesh.geometry)o.mesh.geometry.dispose(); objects.splice(i,1); activeId=null; selectObj(null); }};
+function updateList() { const l=document.getElementById('layerList'); l.innerHTML=''; objects.forEach(o=>{ const d=document.createElement('div'); d.className=`layer-item ${o.id===activeId?'active':''}`; d.innerHTML=`<span>${o.type==='model'?'📦':'🎬'}</span> <span>${o.name}</span>`; d.onclick=()=>selectObj(o.id); l.appendChild(d); }); }
 window.toggleUI=()=>document.getElementById('ui').classList.toggle('hidden');
 document.getElementById('checkGizmo').addEventListener('change',e=>transformControl.visible=e.target.checked);
-
-document.getElementById('checkOcclusion').addEventListener('change', e => {
-   if(xrSession) {
-      alert("Para cambiar la configuración de oclusión real (Depth API), sal y vuelve a entrar en MR.");
-   }
-});
-
+document.getElementById('checkOcclusion').addEventListener('change', e => { if(xrSession) alert("Reinicia MR para aplicar oclusión."); });
 function toggleLoader(s){document.getElementById('loader').style.display=s?'flex':'none';}
 
-// === VR SETUP ===
+// VR SETUP & LOOP
 function setupVR() { if('xr' in navigator) navigator.xr.isSessionSupported('immersive-ar').then(s=>{ if(s) { const b=document.getElementById('vrBtn'); b.style.display='block'; b.onclick=startVR; }}); }
-
 async function startVR() {
   const useOcclusion = document.getElementById('checkOcclusion').checked;
-  const sessionInit = {
-      requiredFeatures: ['local-floor'],
-      optionalFeatures: ['dom-overlay'],
-      domOverlay: { root: document.body }
-  };
-  
-  if(useOcclusion) {
-      sessionInit.optionalFeatures.push('depth-sensing');
-      sessionInit.depthSensing = { 
-          usagePreference: ["gpu-optimized", "cpu-optimized"], 
-          dataFormatPreference: ["luminance-alpha"] 
-      };
-  }
-  
+  const sessionInit = { requiredFeatures: ['local-floor'], optionalFeatures: ['dom-overlay'], domOverlay: { root: document.body } };
+  if(useOcclusion) { sessionInit.optionalFeatures.push('depth-sensing'); sessionInit.depthSensing = { usagePreference: ["gpu-optimized", "cpu-optimized"], dataFormatPreference: ["luminance-alpha"] }; }
   xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
-  renderer.xr.setSession(xrSession);
-  xrSession.addEventListener('end', ()=>xrSession=null);
+  renderer.xr.setSession(xrSession); xrSession.addEventListener('end', ()=>xrSession=null);
 }
 
-// === CONTROLES VR ===
-function initRay() {
-  rightRay = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-5)]), new THREE.LineBasicMaterial({color:0x6c5ce7}));
-  scene.add(rightRay);
-  rayCursor = new THREE.Mesh(new THREE.SphereGeometry(0.02), new THREE.MeshBasicMaterial({color:0xff7675}));
-  scene.add(rayCursor);
-}
-
+function initRay() { rightRay = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-5)]), new THREE.LineBasicMaterial({color:0x6c5ce7})); scene.add(rightRay); rayCursor = new THREE.Mesh(new THREE.SphereGeometry(0.02), new THREE.MeshBasicMaterial({color:0xff7675})); scene.add(rayCursor); }
 function handleVR(frame, dt) {
   if(!xrSession) return;
   const ref = renderer.xr.getReferenceSpace();
-  let lSrc, rSrc;
-  for(const s of xrSession.inputSources) { if(s.handedness==='left') lSrc=s; if(s.handedness==='right') rSrc=s; }
+  let lSrc, rSrc; for(const s of xrSession.inputSources) { if(s.handedness==='left') lSrc=s; if(s.handedness==='right') rSrc=s; }
 
   if(rSrc && rSrc.gripSpace) {
     const p = frame.getPose(rSrc.gripSpace, ref);
     if(p) {
       const pos = p.transform.position; rightRay.position.set(pos.x,pos.y,pos.z); rightRay.quaternion.set(p.transform.orientation.x,p.transform.orientation.y,p.transform.orientation.z,p.transform.orientation.w);
       rightRay.visible = true;
-      const orig = new THREE.Vector3(pos.x, pos.y, pos.z);
-      const dir = new THREE.Vector3(0,0,-1).applyQuaternion(rightRay.quaternion);
+      const orig = new THREE.Vector3(pos.x, pos.y, pos.z); const dir = new THREE.Vector3(0,0,-1).applyQuaternion(rightRay.quaternion);
       const targets = objects.filter(o=>o.settings.projection==='plane'||o.type==='model').map(o=>o.mesh);
       const hits = new THREE.Raycaster(orig, dir, 0, 10).intersectObjects(targets, true);
-      
-      if(hits.length>0) {
-        rayCursor.visible = true; rayCursor.position.copy(hits[0].point);
-        let m = hits[0].object; const found = objects.find(o => { let x=m; while(x){if(x===o.mesh)return true; x=x.parent;} return false; });
-        hoverId = found ? found.id : null;
-      } else { rayCursor.visible=false; hoverId=null; }
+      if(hits.length>0) { rayCursor.visible = true; rayCursor.position.copy(hits[0].point); let m = hits[0].object; const found = objects.find(o => { let x=m; while(x){if(x===o.mesh)return true; x=x.parent;} return false; }); hoverId = found ? found.id : null; } else { rayCursor.visible=false; hoverId=null; }
       ctrl.right.currPos = orig; ctrl.right.currQuat = rightRay.quaternion.clone();
     }
   }
-
   if(rSrc && rSrc.gamepad) {
-    const gp = rSrc.gamepad;
-    const trig = gp.buttons[0].pressed; 
-    const grip = gp.buttons[1].pressed;
-    const btnA = gp.buttons[4]?.pressed || gp.buttons[5]?.pressed; 
-
-    if(btnA && !ctrl.right.lastBtn && activeId) {
-        const o = objects.find(x=>x.id===activeId);
-        if(o && o.video) {
-            if(o.video.paused) o.video.play(); else o.video.pause();
-        }
-    }
+    const gp = rSrc.gamepad; const trig = gp.buttons[0].pressed; const grip = gp.buttons[1].pressed; const btnA = gp.buttons[4]?.pressed || gp.buttons[5]?.pressed; 
+    if(btnA && !ctrl.right.lastBtn && activeId) { const o = objects.find(x=>x.id===activeId); if(o && o.video) { if(o.video.paused) o.video.play(); else o.video.pause(); } }
     ctrl.right.lastBtn = btnA;
-
-    const sx = gp.axes[2]||0; const sy = gp.axes[3]||0;
-    if(trig && !ctrl.right.lastTrig && hoverId) selectObj(hoverId);
-    ctrl.right.lastTrig = trig;
-
+    if(trig && !ctrl.right.lastTrig && hoverId) selectObj(hoverId); ctrl.right.lastTrig = trig;
     if(grip) {
       const obj = objects.find(o=>o.id===activeId);
       if(obj) {
         if(obj.settings.projection==='plane'||obj.type==='model') {
-           if(Math.abs(sx)>0.1) obj.mesh.position.x += sx*dt*2;
-           if(Math.abs(sy)>0.1) obj.mesh.position.z += sy*dt*2;
-           if(ctrl.right.gripped) {
-              const dQ = ctrl.right.currQuat.clone().multiply(ctrl.right.lastQuat.clone().invert());
-              obj.mesh.quaternion.premultiply(dQ);
-              syncUI();
-           }
+           const sx = gp.axes[2]||0; const sy = gp.axes[3]||0;
+           if(Math.abs(sx)>0.1) obj.mesh.position.x += sx*dt*2; if(Math.abs(sy)>0.1) obj.mesh.position.z += sy*dt*2;
+           if(ctrl.right.gripped) { const dQ = ctrl.right.currQuat.clone().multiply(ctrl.right.lastQuat.clone().invert()); obj.mesh.quaternion.premultiply(dQ); syncUI(); }
         }
-        
         if(lSrc && lSrc.gamepad) {
-           const lGrip = lSrc.gamepad.buttons[1].pressed;
-           const lsy = lSrc.gamepad.axes[3]||0;
+           const lGrip = lSrc.gamepad.buttons[1].pressed; const lsy = lSrc.gamepad.axes[3]||0;
            if(Math.abs(lsy)>0.1 && (obj.settings.projection==='plane'||obj.type==='model')) { obj.mesh.position.y -= lsy*dt; syncUI(); }
-           
            if(lGrip) {
               const lp = frame.getPose(lSrc.gripSpace, ref);
               if(lp) {
                  const lPos = new THREE.Vector3(lp.transform.position.x, lp.transform.position.y, lp.transform.position.z);
                  const d = lPos.distanceTo(ctrl.right.currPos);
                  if(!ctrl.left.gripped) { ctrl.gesture.startDist=d; ctrl.gesture.startScale=obj.settings.scale; }
-                 else {
-                    const ns = Math.max(0.1, ctrl.gesture.startScale * (d/ctrl.gesture.startDist));
-                    updateObj('scale', ns); 
-                 }
+                 else { const ns = Math.max(0.1, ctrl.gesture.startScale * (d/ctrl.gesture.startDist)); updateObj('scale', ns); }
               }
               ctrl.left.gripped = true;
            } else ctrl.left.gripped = false;
@@ -677,7 +563,15 @@ function handleVR(frame, dt) {
     } else ctrl.right.gripped = false;
   }
 }
-
+function render(t) {
+  const dt=0.016; const time=t/1000;
+  if(xrSession) handleVR(renderer.xr.getFrame(), dt);
+  objects.forEach(o=>{
+    if(o.type==='gif' && o.gif) { const g=o.gif; if(time-g.t > 0.08) { try { g.ctx.clearRect(0,0,g.ctx.canvas.width,g.ctx.canvas.height); g.r.decodeAndBlitFrameRGBA(g.f, g.dat.data); g.ctx.putImageData(g.dat, 0, 0); g.tex.needsUpdate=true; g.f=(g.f+1)%g.num; g.t=time; } catch(e){} } }
+    if(o.type==='video' && o.tex) o.tex.needsUpdate = true;
+  });
+  renderer.render(scene, camera);
+}
 init();
 </script>
 </body>
