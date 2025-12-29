@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MR Studio Diamond v6.1 (Fixed)</title>
+  <title>MR Studio Diamond v4.0 (Pro Chroma + Geo Morph)</title>
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
   <style>
-    /* UI DARK & CLEAN */
+    /* ESTILOS DE INTERFAZ (UI LIMPIA) */
     * { box-sizing: border-box; user-select: none; }
     body { margin: 0; overflow: hidden; background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; color: #eee; }
     #c { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; z-index: 0; }
@@ -42,6 +42,7 @@
 
     .toggle-ui { position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; background: #1e1e24; border-radius: 50%; display: grid; place-items: center; font-size: 20px; border: 1px solid #555; z-index: 200; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
     #vrBtn { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 14px 45px; background: linear-gradient(135deg, #6c5ce7, #0984e3); color: white; border-radius: 50px; border: none; font-weight: 800; cursor: pointer; z-index: 1000; display: none; box-shadow: 0 0 30px rgba(108,92,231,0.6); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% {box-shadow: 0 0 20px rgba(108,92,231,0.6);} 50% {box-shadow: 0 0 40px rgba(108,92,231,0.8);} 100% {box-shadow: 0 0 20px rgba(108,92,231,0.6);} }
     
     .loader { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 5000; display: none; place-items: center; flex-direction: column; gap: 15px; color: #a29bfe; font-size: 14px; font-weight: bold; letter-spacing: 2px; }
     .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: #a29bfe; border-radius: 50%; animation: spin 1s infinite linear; }
@@ -54,19 +55,15 @@
 <div class="loader" id="loader"><div class="spinner"></div><span>CARGANDO...</span></div>
 
 <div class="ui-panel" id="ui">
-  <h2>🥽 MR Studio Diamond v6.1</h2>
+  <h2>🥽 MR Studio Diamond v4.0</h2>
 
-  <div class="sec-head">📂 Archivos <button id="btnImport" class="warn" style="padding:4px; font-size:10px; width:auto; flex:0;">+ IMPORTAR</button></div>
+  <div class="sec-head">📂 Archivos <button class="warn" style="padding:4px; font-size:10px; width:auto; flex:0;" onclick="fileInput.click()">+ IMPORTAR</button></div>
   <input type="file" id="fileInput" accept="image/*,video/*,.gif,.glb,.gltf,.fbx,.obj" multiple style="display:none;" />
+  
   <div class="layer-list" id="layerList"></div>
 
-  <div class="row" style="background:rgba(108,92,231,0.1); padding:8px; border-radius:6px; border:1px solid rgba(108,92,231,0.3);">
-    <label style="color:#a29bfe; font-weight:bold;">🔍 Modo Precisión</label>
-    <input type="checkbox" id="checkPrecision" style="flex:0; width:18px; height:18px;">
-  </div>
-
   <div id="generalControls">
-      <div class="sec-head">📍 Proyección & Geometría</div>
+      <div class="sec-head">📍 Proyección</div>
       <div class="row">
         <select id="projSelect">
           <option value="plane">Plano 2D</option>
@@ -74,10 +71,24 @@
           <option value="180">Domo 180° (Inmersiva)</option>
         </select>
       </div>
+      <div class="row" id="shapeRow" style="display:none;">
+        <label>Geometría</label>
+        <select id="shapeSelect">
+            <option value="sphere">Esfera (Estándar)</option>
+            <option value="cube">Cubo (Skybox)</option>
+            <option value="ovoid">Ovoide (Vertical)</option>
+        </select>
+      </div>
       
-      <div class="row"><label>Tamaño</label><input type="range" id="scale" min="0.1" max="10" step="0.05" value="1"><span class="val" id="v_scale">1.0</span></div>
-      <div class="row"><label style="color:#a29bfe">Estirar Y</label><input type="range" id="stretchY" min="0.5" max="2.0" step="0.01" value="1.0"><span class="val" id="v_stretchY">1.0</span></div>
-      <div class="row"><label>Modo Espejo</label><input type="checkbox" id="checkFlip" style="flex:0; width:18px; height:18px;"></div>
+      <div class="sec-head">📏 Transformación</div>
+      <div class="row">
+        <label>Escala</label><input type="range" id="scale" min="0.1" max="10" step="0.05" value="1">
+        <span class="val" id="v_scale">1.0</span>
+      </div>
+      <div class="row">
+        <label>Modo Espejo (Flip H)</label>
+        <input type="checkbox" id="checkFlip" style="flex:0; width:18px; height:18px;">
+      </div>
       
       <div id="posControls">
         <div class="row"><label>Distancia</label><input type="range" id="dist" min="0" max="15" step="0.1" value="2"><span class="val" id="v_dist">2.0</span></div>
@@ -88,43 +99,43 @@
 
   <div id="mediaControls" style="display:none;">
     
-    <div class="sec-head">🔊 Audio</div>
-    <div class="row"><label>Volumen</label><input type="range" id="volume" min="0" max="1" step="0.05" value="0"><span class="val" id="v_volume">0%</span></div>
-
     <div class="sec-head">🎨 Color & Imagen</div>
     <div class="row"><label>Brillo</label><input type="range" id="brightness" min="-1" max="1" step="0.05" value="0"><span class="val" id="v_brightness">0.0</span></div>
     <div class="row"><label>Contraste</label><input type="range" id="contrast" min="0" max="3" step="0.1" value="1"><span class="val" id="v_contrast">1.0</span></div>
     <div class="row"><label>Saturación</label><input type="range" id="saturation" min="0" max="3" step="0.1" value="1"><span class="val" id="v_saturation">1.0</span></div>
     <div class="row"><label>Gamma</label><input type="range" id="gamma" min="0.1" max="3" step="0.1" value="1"><span class="val" id="v_gamma">1.0</span></div>
 
-    <div class="sec-head">🟩 Chroma Key (Grey + Face Protect)</div>
+    <div class="sec-head">🖼️ Ajuste Visual</div>
+    <div class="row"><label>Desfase X</label><input type="range" id="offsetX" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetX">0.0</span></div>
+    <div class="row"><label>Desfase Y</label><input type="range" id="offsetY" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetY">0.0</span></div>
+
+    <div class="sec-head">🟩 Chroma Key Pro (Despill + Protect)</div>
     <div class="row">
       <label>Activar</label> <input type="checkbox" id="chromaActive" style="flex:0; width:18px; height:18px;">
       <label style="margin-left:15px">Invertir</label> <input type="checkbox" id="chromaInvert" style="flex:0; width:18px; height:18px;">
     </div>
     
     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin:8px 0; border:1px solid rgba(255,255,255,0.05);">
-      <div class="row"><label style="color:#ff7675">Rojo</label><input type="range" id="keyR" min="0" max="1" step="0.01" value="0.5"><span class="val" id="v_keyR">0.5</span></div>
-      <div class="row"><label style="color:#55efc4">Verde</label><input type="range" id="keyG" min="0" max="1" step="0.01" value="0.5"><span class="val" id="v_keyG">0.5</span></div>
-      <div class="row"><label style="color:#74b9ff">Azul</label><input type="range" id="keyB" min="0" max="1" step="0.01" value="0.5"><span class="val" id="v_keyB">0.5</span></div>
-      <div id="colorPrev" style="height:8px; width:100%; border-radius:4px; background:#888; margin-top:6px; transition:0.3s;"></div>
-      <div style="text-align:center; font-size:9px; color:#666; margin-top:4px;">(Pon R,G,B en 0.5 aprox para Gris)</div>
+      <div class="row"><label style="color:#ff7675">Rojo</label><input type="range" id="keyR" min="0" max="1" step="0.01" value="0"><span class="val" id="v_keyR">0.0</span></div>
+      <div class="row"><label style="color:#55efc4">Verde</label><input type="range" id="keyG" min="0" max="1" step="0.01" value="1"><span class="val" id="v_keyG">1.0</span></div>
+      <div class="row"><label style="color:#74b9ff">Azul</label><input type="range" id="keyB" min="0" max="1" step="0.01" value="0"><span class="val" id="v_keyB">0.0</span></div>
+      <div id="colorPrev" style="height:8px; width:100%; border-radius:4px; background:#0f0; margin-top:6px; transition:0.3s;"></div>
     </div>
 
-    <div class="row"><label>Similitud</label><input type="range" id="sim" min="0" max="1" step="0.001" value="0.2"><span class="val" id="v_sim">0.2</span></div>
+    <div class="row"><label>Similitud</label><input type="range" id="sim" min="0" max="1" step="0.001" value="0.4"><span class="val" id="v_sim">0.4</span></div>
     <div class="row"><label>Suavizado</label><input type="range" id="smooth" min="0" max="0.5" step="0.001" value="0.05"><span class="val" id="v_smooth">0.05</span></div>
     <div class="row"><label>Opacidad</label><input type="range" id="opacity" min="0" max="1" step="0.05" value="1"><span class="val" id="v_opacity">1.0</span></div>
   </div>
 
   <div class="btn-group" style="margin-top:20px;">
     <button class="primary" onclick="centerActive()">🎯 Centrar</button>
-    <button class="warn" onclick="reloadVideo()">🔄 Recargar</button>
+    <button class="warn" onclick="reloadVideo()">🔄 Recargar Video</button>
     <button class="danger" onclick="deleteActive()">🗑️ Borrar</button>
   </div>
   
   <div class="row" style="margin-top:20px; font-size:11px; color:#888; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
     <label><input type="checkbox" id="checkGizmo" checked> Gizmos</label>
-    <label><input type="checkbox" id="checkOcclusion" checked> Oclusión</label>
+    <label title="Requiere reiniciar sesión VR"><input type="checkbox" id="checkOcclusion" checked> Oclusión (Mundo Real)</label>
   </div>
 </div>
 
@@ -147,8 +158,22 @@ let objects = [];
 let activeId = null;
 let transformControl;
 
-// --- SHADER HÍBRIDO (CHROMA + LUMA PARA GRIS) ---
-const vert = `varying vec2 vUv; uniform vec2 offset; void main() { vUv = uv + offset; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const ctrl = {
+  right: { gripped: false, lastPos: new THREE.Vector3(), lastQuat: new THREE.Quaternion(), lastTrig: false, lastBtn: false },
+  left: { gripped: false },
+  gesture: { active: false, startDist: 0, startScale: 1 }
+};
+let rightRay, rayCursor, hoverId;
+
+const vert = `
+varying vec2 vUv; 
+uniform vec2 offset; 
+void main() { 
+    vUv = uv + offset; 
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
+}`;
+
+// SHADER MEJORADO CON DESPILL PARA QUITAR HALOS GRISACEOS/AZULES
 const frag = `
 uniform sampler2D map;
 uniform bool chromaEnabled, chromaInvert;
@@ -182,34 +207,43 @@ void main() {
     float alpha = tex.a * opacity;
 
     if (chromaEnabled) {
-        vec3 keyHSV = rgb2hsv(keyColor);
-        float dist = 0.0;
-        bool isGreyKey = (keyHSV.y < 0.15); 
-
-        if (isGreyKey) {
-            dist = distance(col, keyColor) * 1.5; 
-        } else {
-            vec3 hsv = rgb2hsv(col);
-            float hueDist = abs(hsv.x - keyHSV.x);
-            if (hueDist > 0.5) hueDist = 1.0 - hueDist;
-            dist = sqrt(pow(hueDist * 2.0, 2.0) + pow(hsv.y - keyHSV.y, 2.0));
-        }
+        vec3 hsv = rgb2hsv(col);
+        vec3 kHsv = rgb2hsv(keyColor);
+        
+        float hueDist = abs(hsv.x - kHsv.x);
+        if (hueDist > 0.5) hueDist = 1.0 - hueDist;
+        float dist = sqrt(pow(hueDist * 2.0, 2.0) + pow(hsv.y - kHsv.y, 2.0)); 
         
         float mask = smoothstep(similarity, similarity + smoothness, dist);
         
-        if (!isGreyKey) {
-             float protection = 0.0;
-             if(keyColor.g > keyColor.r && keyColor.g > keyColor.b) protection = (col.r - col.g) * 3.0; 
-             else if(keyColor.b > keyColor.r && keyColor.b > keyColor.g) protection = (col.r - col.b) * 3.0;
-             if(protection > 0.0) mask = clamp(mask + protection, 0.0, 1.0);
+        // --- PROTECCIÓN FACIAL (Face Protect) ---
+        float protection = 0.0;
+        if(keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
+            protection = (col.r - col.g) * 3.0; 
+        } else if(keyColor.b > keyColor.r && keyColor.b > keyColor.g) {
+            protection = (col.r - col.b) * 3.0;
         }
+        if(protection > 0.0) mask = clamp(mask + protection, 0.0, 1.0);
 
         if (!chromaInvert) {
             alpha *= mask;
-            if(!isGreyKey && mask < 0.9) {
-               float maxRB = max(col.r, col.b);
-               if (keyColor.g > keyColor.r && keyColor.g > keyColor.b && col.g > maxRB) col.g = mix(col.g, maxRB, 1.0-mask); 
+            
+            // --- DESPILL (ELIMINAR HALO AZUL/GRIS) ---
+            // Si el pixel es semitransparente o cercano al color clave,
+            // neutralizamos el componente de color dominante.
+            if(mask < 0.98) {
+               float spillVal = 0.0;
+               if (keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
+                   // Green Screen: reemplazar verde con el promedio de R y B
+                   spillVal = (col.r + col.b) * 0.5;
+                   if(col.g > spillVal) col.g = mix(col.g, spillVal, 0.8 * (1.0-mask));
+               } else if (keyColor.b > keyColor.g && keyColor.b > keyColor.r) {
+                   // Blue Screen: reemplazar azul con el promedio de R y G
+                   spillVal = (col.r + col.g) * 0.5;
+                   if(col.b > spillVal) col.b = mix(col.b, spillVal, 0.8 * (1.0-mask));
+               }
             }
+            
         } else {
             alpha *= (1.0 - mask);
         }
@@ -230,17 +264,13 @@ function init() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 2000);
+  
   scene.add(new THREE.AmbientLight(0xffffff, 1.2));
   const d = new THREE.DirectionalLight(0xffffff, 1.5); d.position.set(2, 5, 2); scene.add(d);
 
   transformControl = new TransformControls(camera, renderer.domElement);
   transformControl.addEventListener('dragging-changed', e=>{}); 
   scene.add(transformControl);
-
-  // FIX: Bindeo manual del botón de importar
-  document.getElementById('btnImport').addEventListener('click', () => {
-    document.getElementById('fileInput').click();
-  });
 
   setupVR(); initRay();
   window.addEventListener('resize', onResize);
@@ -256,60 +286,59 @@ function onResize() {
 document.getElementById('fileInput').addEventListener('change', async e => {
   if(!e.target.files.length) return;
   toggleLoader(true);
-  try {
-      for(const f of e.target.files) {
-        try {
-          const url = URL.createObjectURL(f);
-          const n = f.name.toLowerCase();
-          if(n.match(/\.(glb|gltf)$/)) await load3D(url, n, 'gltf');
-          else if(n.match(/\.fbx$/)) await load3D(url, n, 'fbx');
-          else if(n.match(/\.obj$/)) await load3D(url, n, 'obj');
-          else if(n.match(/\.gif$/)) await loadGif(f, n);
-          else if(f.type.startsWith('video/') || n.includes('360')) await loadVideo(url, n);
-          else if(f.type.startsWith('image/')) await loadImg(url, n);
-        } catch(err) { console.error('Error cargando archivo:', f.name, err); alert("Error con " + f.name); }
-      }
-  } finally {
-      toggleLoader(false);
-      e.target.value = '';
+  for(const f of e.target.files) {
+    try {
+      const url = URL.createObjectURL(f);
+      const n = f.name.toLowerCase();
+      if(n.match(/\.(glb|gltf)$/)) await load3D(url, n, 'gltf');
+      else if(n.match(/\.fbx$/)) await load3D(url, n, 'fbx');
+      else if(n.match(/\.obj$/)) await load3D(url, n, 'obj');
+      else if(n.match(/\.gif$/)) await loadGif(f, n);
+      else if(f.type.startsWith('video/') || n.includes('360')) await loadVideo(url, n);
+      else if(f.type.startsWith('image/')) await loadImg(url, n);
+    } catch(err) { 
+      console.error('Error al cargar archivo:', f.name, err); 
+    }
   }
+  toggleLoader(false);
+  e.target.value = '';
 });
 
 async function loadVideo(url, name) {
   const vid = document.createElement('video');
   vid.src = url; vid.crossOrigin = 'anonymous'; 
-  vid.loop = true; vid.muted = true; vid.playsInline = true; 
+  vid.loop = true; vid.muted = true; vid.playsInline = true;
   vid.style.display = 'none'; document.body.appendChild(vid);
 
-  // FIX: Promesa segura para evitar bloqueo infinito
-  await new Promise((resolve, reject) => {
-     let done = false;
-     const onOk = () => { if(!done){ done=true; resolve(); }};
-     const onErr = (e) => { if(!done){ done=true; console.warn("Video warning", e); resolve(); }}; // Resolvemos igual para no bloquear
-     
-     vid.onloadedmetadata = onOk;
-     vid.onerror = onErr;
-     
-     // Timeout de seguridad de 2 segundos
-     setTimeout(() => { if(!done) { console.log("Force video load"); onOk(); } }, 2000);
-     
+  await new Promise(resolve => {
+     vid.onloadedmetadata = () => { resolve(); };
      vid.play().catch(e=>console.log("Autoplay prevent:", e));
   });
 
   const tex = new THREE.VideoTexture(vid);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
   tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
   
   let proj = 'plane';
-  if(name.includes('360')) proj='360'; else if(name.includes('180')) proj='180';
+  if(name.includes('360')) proj='360';
+  else if(name.includes('180')) proj='180';
+
   const ar = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth/vid.videoHeight : 1.77;
 
-  const mesh = createMesh(proj, tex, ar);
+  // Creamos con forma 'sphere' por defecto
+  const mesh = createMesh(proj, 'sphere', tex, ar);
   const obj = { id: uid(), mesh, name, type:'video', video:vid, tex, settings: defSettings() };
   obj.settings.projection = proj;
   
-  if(proj !== 'plane') { obj.mesh.position.set(0, 1.6, 0); obj.settings.dist=0; } 
-  else { obj.mesh.position.set(0, 1.6, -2); obj.settings.dist=2; }
+  if(proj !== 'plane') {
+      obj.mesh.position.set(0, 1.6, 0); // Posición inicial
+      obj.settings.scale = 1; 
+      obj.settings.dist = 0;
+  } else {
+      obj.mesh.position.set(0, 1.6, -2);
+      obj.settings.dist = 2;
+  }
 
   addObj(obj);
 }
@@ -317,27 +346,22 @@ async function loadVideo(url, name) {
 async function loadGif(file, name) {
   const buf = await file.arrayBuffer();
   // @ts-ignore
-  let R = window.GifReader || (window.Omggif ? window.Omggif.GifReader : null); 
-  if(!R) { console.error("Omggif no cargó"); return; }
+  let R = window.GifReader || (window.Omggif ? window.Omggif.GifReader : null);
+  if(!R) return;
   const r = new R(new Uint8Array(buf));
-  const w=r.width, h=r.height; const cvs=document.createElement('canvas'); cvs.width=w; cvs.height=h;
+  const w=r.width, h=r.height;
+  const cvs=document.createElement('canvas'); cvs.width=w; cvs.height=h;
   const ctx=cvs.getContext('2d'); const dat=ctx.createImageData(w,h);
   const tex=new THREE.CanvasTexture(cvs); tex.colorSpace=THREE.SRGBColorSpace;
-  const mesh = createMesh('plane', tex, w/h); mesh.position.set(0, 1.6, -2);
-  addObj({ id:uid(), mesh, name, type:'gif', settings:defSettings(), gif:{r,ctx,dat,tex,f:0,num:r.numFrames(),t:0} });
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+  
+  const mesh = createMesh('plane', 'sphere', tex, w/h);
+  mesh.position.set(0, 1.6, -2);
+  const obj = { id:uid(), mesh, name, type:'gif', settings:defSettings(), gif:{r,ctx,dat,tex,f:0,num:r.numFrames(),t:0} };
+  addObj(obj);
 }
 
 async function loadImg(url, name) {
-  const tex = await new THREE.TextureLoader().loadAsync(url); tex.colorSpace = THREE.SRGBColorSpace;
-  const mesh = createMesh('plane', tex, tex.image.width/tex.image.height); mesh.position.set(0, 1.6, -2);
-  addObj({ id:uid(), mesh, name, type:'image', tex, settings:defSettings() });
-}
-
-async function load3D(url, name, type) {
-  let m;
-  if(type==='gltf') m=(await new GLTFLoader().loadAsync(url)).scene;
-  else if(type==='fbx') m=await new FBXLoader().loadAsync(url);
-  else m=await new OBJLoader().loadAsync(url);
-  const box = new THREE.Box3().setFromObject(m); const sz = box.getSize(new THREE.Vector3()).length(); const sc = (sz>0 && sz<1000) ? 2/sz : 1; 
-  m.scale.setScalar(sc); m.position.set(0, 1, -2);
-  m.traverse(c=>{ if(c.isMesh)
+  const tex = await new THREE.TextureLoader().loadAsync(url);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.Repeat
