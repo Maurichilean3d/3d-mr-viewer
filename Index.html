@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MR Studio Diamond v4.0 (Editor+MR Workflow)</title>
+  <title>MR Studio Diamond v4.1 (Editor+MR Workflow + 360 Surfaces)</title>
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
   <style>
     * { box-sizing: border-box; user-select: none; }
@@ -11,7 +11,7 @@
     #c { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; z-index: 0; }
 
     .ui-panel {
-      position: fixed; left: 20px; top: 20px; width: 360px; max-height: 95vh;
+      position: fixed; left: 20px; top: 20px; width: 380px; max-height: 95vh;
       background: rgba(10, 10, 14, 0.95); backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
       padding: 18px; overflow-y: auto; z-index: 100;
@@ -27,7 +27,7 @@
     .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     label { font-size: 12px; flex: 1; color: #ccc; white-space: nowrap; font-weight: 500; }
     input[type=range] { flex: 2; height: 4px; background: #333; border-radius: 2px; accent-color: #6c5ce7; cursor: pointer; }
-    .val { width: 44px; text-align: right; font-size: 11px; font-family: monospace; color: #a29bfe; }
+    .val { width: 54px; text-align: right; font-size: 11px; font-family: ui-monospace, Menlo, Consolas, monospace; color: #a29bfe; }
     select, input[type=file] { width: 100%; background: #1e1e24; border: 1px solid #444; color: #eee; padding: 8px; border-radius: 8px; font-size: 11px; outline: none; }
 
     button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; color: white; background: #333; transition: 0.2s; }
@@ -72,6 +72,12 @@
     .kbd { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color:#fff;
       background: rgba(255,255,255,0.12); padding: 2px 6px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.12);
     }
+
+    .miniBtn{
+      padding: 8px 10px; border-radius: 10px; border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08); color:#fff; font-weight: 800; cursor: pointer;
+    }
+    .miniBtn.red{ border-color: rgba(255,118,117,0.35); background: rgba(255,118,117,0.12); }
   </style>
 </head>
 <body>
@@ -86,7 +92,7 @@
 </div>
 
 <div class="ui-panel" id="ui">
-  <h2>🥽 MR Studio Diamond v4.0</h2>
+  <h2>🥽 MR Studio Diamond v4.1</h2>
 
   <div class="sec-head">📂 Archivos <button class="warn" style="padding:4px; font-size:10px; width:auto; flex:0;" onclick="fileInput.click()">+ IMPORTAR</button></div>
   <input type="file" id="fileInput" accept="image/*,video/*,.gif,.glb,.gltf,.fbx,.obj" multiple style="display:none;" />
@@ -123,8 +129,20 @@
     </div>
 
     <div class="row" id="followRow" style="display:none;">
-      <label title="Mantiene la superficie centrada en el observador (útil para reencuadre)">Centrado en observador</label>
+      <label title="Mantiene la superficie centrada en el observador (útil para preview inmersivo)">Centrado en observador</label>
       <input type="checkbox" id="followViewer" style="flex:0; width:18px; height:18px;">
+    </div>
+
+    <div class="row" id="surfaceSizeRow" style="display:none;">
+      <label>Tamaño soporte</label>
+      <input type="range" id="surfaceSize" min="5" max="80" step="0.5" value="20">
+      <span class="val" id="v_surfaceSize">20.0</span>
+    </div>
+
+    <div class="row" id="surfaceHeightRow" style="display:none;">
+      <label>Altura soporte</label>
+      <input type="range" id="surfaceHeight" min="-10" max="10" step="0.1" value="0">
+      <span class="val" id="v_surfaceHeight">0.0</span>
     </div>
 
     <div class="sec-head">📏 Transformación</div>
@@ -141,10 +159,10 @@
       <div class="row"><label>Distancia</label><input type="range" id="dist" min="0" max="15" step="0.1" value="2"><span class="val" id="v_dist">2.0</span></div>
       <div class="row"><label>Altura</label><input type="range" id="height" min="-5" max="5" step="0.1" value="1.6"><span class="val" id="v_height">1.6</span></div>
     </div>
+
     <div class="row"><label>Rotación Y</label><input type="range" id="rotY" min="0" max="360" step="1" value="0"><span class="val" id="v_rotY">0</span></div>
   </div>
 
-  <!-- IMPORTANT: Estas propiedades quedan BLOQUEADAS en XR (modo MR) para que no sea accidente -->
   <div id="mediaControls" style="display:none;">
     <div class="sec-head">🎨 Color & Imagen</div>
     <div class="row"><label>Brillo</label><input type="range" id="brightness" min="-1" max="1" step="0.05" value="0"><span class="val" id="v_brightness">0.0</span></div>
@@ -165,6 +183,12 @@
       <label style="margin-left:15px">Invertir</label> <input type="checkbox" id="chromaInvert" style="flex:0; width:18px; height:18px;">
     </div>
 
+    <div class="row" style="gap:8px;">
+      <button class="miniBtn" id="presetGreen" title="Preset verde clásico">Key Verde</button>
+      <button class="miniBtn" id="presetBlue" title="Preset azul">Key Azul</button>
+      <button class="miniBtn red" id="presetBlueGray" title="Preset gris-azulado (360 típico)">Key Gris-Azulado</button>
+    </div>
+
     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin:8px 0; border:1px solid rgba(255,255,255,0.05);">
       <div class="row"><label style="color:#ff7675">Rojo</label><input type="range" id="keyR" min="0" max="1" step="0.01" value="0"><span class="val" id="v_keyR">0.0</span></div>
       <div class="row"><label style="color:#55efc4">Verde</label><input type="range" id="keyG" min="0" max="1" step="0.01" value="1"><span class="val" id="v_keyG">1.0</span></div>
@@ -176,8 +200,15 @@
     <div class="row"><label>Suavizado</label><input type="range" id="smooth" min="0" max="0.5" step="0.001" value="0.05"><span class="val" id="v_smooth">0.05</span></div>
     <div class="row"><label>Opacidad</label><input type="range" id="opacity" min="0" max="1" step="0.05" value="1"><span class="val" id="v_opacity">1.0</span></div>
 
+    <div class="sec-head">🧯 Seguridad en MR</div>
+    <div class="row">
+      <label title="Por defecto se bloquea el panel en MR para evitar cambios accidentales">Desbloquear color en MR</label>
+      <input type="checkbox" id="unlockInMR" style="flex:0; width:18px; height:18px;">
+    </div>
+
     <div class="hint">
-      En <b>MR</b> estas propiedades se bloquean por seguridad. Para editar color/chroma, usa <b>SALIR A EDICIÓN</b>.
+      En <b>MR</b> el panel de color/chroma se bloquea por seguridad. Si realmente quieres editar en MR,
+      activa <b>Desbloquear color en MR</b> (con confirmación).
     </div>
   </div>
 
@@ -224,12 +255,13 @@ let raycaster, mouse = new THREE.Vector2();
 let hoverId;
 
 const ctrl = {
-  right: { gripped: false, lastPos: new THREE.Vector3(), lastQuat: new THREE.Quaternion(), lastTrig: false, lastBtn: false },
+  right: { gripped: false, lastQuat: new THREE.Quaternion(), lastTrig: false, lastBtn: false },
   left: { gripped: false },
-  gesture: { active: false, startDist: 0, startScale: 1 }
+  gesture: { startDist: 0, startScale: 1 }
 };
 let rightRay, rayCursor;
 
+// ======= Shaders =======
 const vert = `
 varying vec2 vUv;
 uniform vec2 offset;
@@ -270,16 +302,15 @@ vec3 adjustColor(vec3 color) {
 vec3 removeBlueGray(vec3 col, float amt) {
   if(amt <= 0.0) return col;
   vec3 hsv = rgb2hsv(col);
-  float lowSat = 1.0 - smoothstep(0.20, 0.45, hsv.y);      // más efecto en saturación baja
-  float midVal = smoothstep(0.15, 0.95, hsv.z);            // evita negros puros
-  float hueCyan = 1.0 - smoothstep(0.20, 0.32, abs(hsv.x - 0.50)); // ~ cian/azul (0.5 en hsv)
+  float lowSat = 1.0 - smoothstep(0.20, 0.45, hsv.y);
+  float midVal = smoothstep(0.15, 0.95, hsv.z);
+  float hueCyan = 1.0 - smoothstep(0.20, 0.32, abs(hsv.x - 0.50));
   float w = amt * lowSat * midVal * hueCyan;
 
-  // reduce azul un poco y compensa hacia gris neutro
   float g = dot(col, vec3(0.299, 0.587, 0.114));
   vec3 neutral = vec3(g);
   vec3 outc = mix(col, neutral, w * 0.65);
-  outc.b = mix(outc.b, outc.b * (1.0 - 0.35*w), 1.0); // baja azul
+  outc.b = mix(outc.b, outc.b * (1.0 - 0.35*w), 1.0);
   return outc;
 }
 
@@ -297,7 +328,7 @@ void main() {
     float dist = sqrt(pow(hueDist * 2.0, 2.0) + pow(hsv.y - kHsv.y, 2.0));
     float mask = smoothstep(similarity, similarity + smoothness, dist);
 
-    // PROTECCIÓN DE ROJOS (Ojos/Labios)
+    // Protección rojos (ojos/labios)
     float protection = 0.0;
     if(keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
       protection = (col.r - col.g) * 3.0;
@@ -327,6 +358,7 @@ void main() {
 }
 `;
 
+// ======= Init =======
 function init() {
   renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -341,7 +373,6 @@ function init() {
   scene.add(new THREE.AmbientLight(0xffffff, 1.2));
   const d = new THREE.DirectionalLight(0xffffff, 1.5); d.position.set(2, 5, 2); scene.add(d);
 
-  // Editor grid/axes
   grid = new THREE.GridHelper(30, 60, 0x444444, 0x222222);
   grid.position.y = 0;
   scene.add(grid);
@@ -350,7 +381,6 @@ function init() {
   axes.position.set(0, 0.01, 0);
   scene.add(axes);
 
-  // Orbit (Editor)
   orbit = new OrbitControls(camera, renderer.domElement);
   orbit.enableDamping = true;
   orbit.dampingFactor = 0.06;
@@ -359,7 +389,7 @@ function init() {
 
   transformControl = new TransformControls(camera, renderer.domElement);
   transformControl.addEventListener('dragging-changed', e=>{
-    orbit.enabled = !e.value; // mientras arrastras gizmo, no orbit
+    orbit.enabled = !e.value;
   });
   transformControl.setTranslationSnap(null);
   transformControl.setRotationSnap(null);
@@ -379,10 +409,25 @@ function init() {
     transformControl.setTranslationSnap(on ? 0.25 : null);
   });
 
+  // Presets key
+  document.getElementById('presetGreen').onclick = ()=>setKeyPreset(0.0, 1.0, 0.0, 0.40, 0.05);
+  document.getElementById('presetBlue').onclick = ()=>setKeyPreset(0.0, 0.25, 1.0, 0.38, 0.06);
+  // gris-azulado: key + ajuste default para que sea usable (puedes refinar con sliders)
+  document.getElementById('presetBlueGray').onclick = ()=>setKeyPreset(0.35, 0.45, 0.60, 0.33, 0.08);
+
+  // Unlock en MR (confirmación explícita)
+  document.getElementById('unlockInMR').addEventListener('change', (e)=>{
+    if(!xrSession) return; // solo relevante en MR
+    if(e.target.checked){
+      const ok = confirm("¿Seguro? Esto DESBLOQUEA color/chroma en MR y puede causar cambios accidentales.\n\nRecomendado: editar en Modo Editor.");
+      if(!ok) e.target.checked = false;
+    }
+    setMode(!!xrSession);
+  });
+
   window.addEventListener('resize', onResize);
   renderer.setAnimationLoop(render);
 
-  // badge
   document.getElementById('exitXrBtn').onclick = ()=>{ if(xrSession) xrSession.end(); };
   setMode(false);
 }
@@ -398,16 +443,18 @@ function setMode(isXR){
   const text = document.getElementById('modeText');
   const exitBtn = document.getElementById('exitXrBtn');
 
+  const unlock = document.getElementById('unlockInMR').checked;
+
   if(isXR){
     dot.style.background = '#ff7675';
     dot.style.boxShadow = '0 0 18px rgba(255,118,117,0.7)';
     text.innerText = 'MODO MR (PREVIEW)';
     exitBtn.style.display = 'inline-block';
 
-    // Bloqueo de propiedades en XR (para que no sea accidente)
-    document.getElementById('mediaControls').classList.add('disabled-overlay');
+    // Bloqueo por seguridad (a menos que lo desbloquees explícitamente)
+    if(!unlock) document.getElementById('mediaControls').classList.add('disabled-overlay');
+    else document.getElementById('mediaControls').classList.remove('disabled-overlay');
 
-    // En MR no quieres orbit (cámara XR manda)
     orbit.enabled = false;
   } else {
     dot.style.background = '#55efc4';
@@ -420,7 +467,7 @@ function setMode(isXR){
   }
 }
 
-// ======= INPUT / IMPORT =======
+// ======= Import =======
 document.getElementById('fileInput').addEventListener('change', async e => {
   if(!e.target.files.length) return;
   toggleLoader(true);
@@ -464,14 +511,30 @@ async function loadVideo(url, name) {
 
   const ar = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth/vid.videoHeight : 1.77;
 
-  const mesh = createMesh(proj, 'sphere', tex, ar);
-  const obj = { id: uid(), mesh, name, type:'video', video:vid, tex, settings: defSettings() };
+  const obj = {
+    id: uid(),
+    mesh: null,
+    name,
+    type:'video',
+    video:vid,
+    tex,
+    settings: defSettings()
+  };
   obj.settings.projection = proj;
 
+  // defaults para 360/180
   if(proj !== 'plane') {
-    obj.mesh.position.set(0, 0, 0);
-    obj.settings.scale = 1;
-    obj.settings.dist = 0;
+    obj.settings.surface = 'sphere';
+    obj.settings.surfaceSize = 20;
+    obj.settings.followViewer = true; // por defecto centrado
+    obj.settings.surfaceHeight = 0;
+  }
+
+  const mesh = createMesh(obj.settings, tex, ar);
+  obj.mesh = mesh;
+
+  if(proj !== 'plane') {
+    obj.mesh.position.set(0, obj.settings.surfaceHeight, 0);
   } else {
     obj.mesh.position.set(0, 1.6, -2);
     obj.settings.dist = 2;
@@ -492,9 +555,10 @@ async function loadGif(file, name) {
   const tex=new THREE.CanvasTexture(cvs); tex.colorSpace=THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
 
-  const mesh = createMesh('plane', 'sphere', tex, w/h);
-  mesh.position.set(0, 1.6, -2);
-  const obj = { id:uid(), mesh, name, type:'gif', settings:defSettings(), gif:{r,ctx,dat,tex,f:0,num:r.numFrames(),t:0} };
+  const obj = { id:uid(), mesh:null, name, type:'gif', tex, settings:defSettings(), gif:{r,ctx,dat,tex,f:0,num:r.numFrames(),t:0} };
+  obj.settings.projection = 'plane';
+  obj.mesh = createMesh(obj.settings, tex, w/h);
+  obj.mesh.position.set(0, 1.6, -2);
   addObj(obj);
 }
 
@@ -502,9 +566,11 @@ async function loadImg(url, name) {
   const tex = await new THREE.TextureLoader().loadAsync(url);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-  const mesh = createMesh('plane', 'sphere', tex, tex.image.width/tex.image.height);
-  mesh.position.set(0, 1.6, -2);
-  const obj = { id:uid(), mesh, name, type:'image', tex, settings:defSettings() };
+
+  const obj = { id:uid(), mesh:null, name, type:'image', tex, settings:defSettings() };
+  obj.settings.projection = 'plane';
+  obj.mesh = createMesh(obj.settings, tex, tex.image.width/tex.image.height);
+  obj.mesh.position.set(0, 1.6, -2);
   addObj(obj);
 }
 
@@ -526,33 +592,45 @@ async function load3D(url, name, type) {
   addObj(obj);
 }
 
-// ======= GEOMETRÍAS / SUPERFICIES =======
-function createMesh(proj, surface, tex, aspect) {
+// ======= Superficies =======
+function createMesh(settings, tex, aspect) {
+  const proj = settings.projection;
+  const surface = settings.surface || 'sphere';
+  const size = settings.surfaceSize ?? 20;
+
   let geo, side=THREE.DoubleSide;
 
   const makeInside = (g)=>{ g.computeVertexNormals(); return g; };
 
   if(proj === '360') {
     side = THREE.BackSide;
+
     if(surface === 'cube'){
-      geo = makeInside(new THREE.BoxGeometry(40, 40, 40, 1, 1, 1));
+      geo = makeInside(new THREE.BoxGeometry(size*2, size*2, size*2, 1, 1, 1));
     } else {
-      geo = makeInside(new THREE.SphereGeometry(20, 64, 64));
+      geo = makeInside(new THREE.SphereGeometry(size, 64, 64));
       if(surface === 'ovoid'){
-        // ovoide = esfera escalada (más “huevo”)
         geo.scale(1.25, 1.0, 1.0);
       }
     }
+
+    // FIX MIRROR 360: invertimos X en la geometría para que la equirectangular no quede espejo
+    geo.scale(-1, 1, 1);
+
   } else if(proj === '180') {
     side = THREE.BackSide;
+
     if(surface === 'cube'){
-      // 180 en cubo: hacemos un “halfbox” simple usando esfera sigue siendo mejor
-      geo = makeInside(new THREE.SphereGeometry(20, 64, 64, 0, Math.PI));
+      geo = makeInside(new THREE.SphereGeometry(size, 64, 64, 0, Math.PI));
     } else {
-      geo = makeInside(new THREE.SphereGeometry(20, 64, 64, 0, Math.PI));
+      geo = makeInside(new THREE.SphereGeometry(size, 64, 64, 0, Math.PI));
       if(surface === 'ovoid') geo.scale(1.25, 1.0, 1.0);
     }
     geo.rotateY(-Math.PI/2);
+
+    // FIX MIRROR 180
+    geo.scale(-1, 1, 1);
+
   } else {
     geo = new THREE.PlaneGeometry(aspect, 1);
   }
@@ -574,6 +652,7 @@ function createMesh(proj, surface, tex, aspect) {
   });
 
   const mesh = new THREE.Mesh(geo, mat);
+
   if(proj !== 'plane') {
     mesh.frustumCulled = false;
     mesh.renderOrder = -1;
@@ -581,10 +660,11 @@ function createMesh(proj, surface, tex, aspect) {
   return mesh;
 }
 
+// ======= Settings =======
 function defSettings() {
   return {
     scale:1, dist:2, height:1.6, rotY:0, projection:'plane',
-    surface:'sphere', followViewer:false,
+    surface:'sphere', surfaceSize:20, surfaceHeight:0, followViewer:false,
     flipX:false,
     chromaEnabled:false, chromaInvert:false, keyR:0, keyG:1, keyB:0, sim:0.4, smooth:0.05,
     offsetX:0, offsetY:0, opac:1,
@@ -592,6 +672,7 @@ function defSettings() {
     deblue:0
   };
 }
+
 function uid() { return Math.random().toString(36).substr(2,9); }
 
 function addObj(obj) {
@@ -601,36 +682,49 @@ function addObj(obj) {
   selectObj(obj.id);
 }
 
-// ======= UPDATE OBJ / UI =======
+// ======= Update / UI =======
 function updateObj(k, v) {
   const o = objects.find(x=>x.id===activeId); if(!o) return;
   o.settings[k]=v;
   const s = o.settings;
-  const m = o.mesh;
+  let m = o.mesh;
 
-  // Cambios que requieren recrear geometría/material (proyección/superficie)
-  if(k==='projection' || k==='surface') {
+  // Cambios que requieren recrear
+  const needsRebuild = (k==='projection' || k==='surface' || k==='surfaceSize');
+
+  if(needsRebuild) {
     if(o.type==='model') return;
 
     scene.remove(m);
+
     let ar=1.77;
     if(o.video) ar=o.video.videoWidth/o.video.videoHeight;
     else if(o.tex && o.tex.image) ar=o.tex.image.width/o.tex.image.height;
 
     const tex = o.tex || m.material.uniforms?.map.value;
-    const nm = createMesh(s.projection, s.surface, tex, ar);
-    nm.rotation.copy(m.rotation);
+
+    const nm = createMesh(s, tex, ar);
+
+    // Mantener transform cuando no es followViewer
     nm.position.copy(m.position);
+    nm.rotation.copy(m.rotation);
     nm.scale.copy(m.scale);
 
     o.mesh = nm;
+    m = nm;
 
-    // Reaplicar uniforms desde settings
     applyUniforms(o);
 
-    // Forzar posicionado coherente
-    if(s.projection!=='plane'){
-      nm.position.set(0,0,0);
+    // Forzar defaults según proyección
+    if(s.projection !== 'plane'){
+      // Si followViewer true, se centra en render; si no, respetamos posición (y altura)
+      if(s.followViewer){
+        nm.position.set(0, s.surfaceHeight ?? 0, 0);
+      } else {
+        // si venía de plane, lo llevamos al origen pero con altura
+        if(Math.abs(nm.position.length()) < 0.001) nm.position.set(0, s.surfaceHeight ?? 0, 0);
+        nm.position.y = (s.surfaceHeight ?? 0);
+      }
       o.settings.dist = 0;
     } else {
       if(Math.abs(o.settings.dist) < 0.01) o.settings.dist = 2;
@@ -642,31 +736,45 @@ function updateObj(k, v) {
     return;
   }
 
-  // LOGICA DE ESCALA + ESPEJO (FLIP)
+  // Escala + flip
   if(k==='scale' || k==='flipX') {
     const bs = o.baseScale || 1;
     const dir = s.flipX ? -1 : 1;
     m.scale.set(s.scale * bs * dir, s.scale * bs, s.scale * bs);
   }
 
-  // Posición
+  // Posición (plane/model con sliders)
   if(s.projection==='plane' || o.type==='model') {
     if(k==='dist') m.position.z = -s.dist;
     if(k==='height') m.position.y = s.height;
   } else {
-    // 360/180 normalmente centrados
-    m.position.set(0,0,0);
+    // 360/180: solo forzamos si followViewer está activo
+    if(k==='surfaceHeight'){
+      m.position.y = s.surfaceHeight;
+    }
+    if(s.followViewer){
+      // si está follow, lo centraremos en render loop (pero respetamos altura)
+      m.position.y = s.surfaceHeight ?? 0;
+    }
   }
 
   // Rotación Y
-  if(k==='rotY') m.rotation.y = THREE.MathUtils.degToRad(s.rotY) + (s.projection==='180'?-Math.PI/2:0);
-
-  // Follow viewer (centrado en observador)
-  if(k==='followViewer'){
-    // nada inmediato: se aplica en render loop
+  if(k==='rotY') {
+    const extra = (s.projection==='180' ? -Math.PI/2 : 0);
+    m.rotation.y = THREE.MathUtils.degToRad(s.rotY) + extra;
   }
 
-  // Uniforms (solo media)
+  // Follow viewer toggle
+  if(k==='followViewer') {
+    // si se apaga follow, dejamos posición actual; si se prende, se recentra en render
+    if(s.followViewer){
+      m.position.y = s.surfaceHeight ?? 0;
+    }
+    // Al cambiar follow, dejamos que el gizmo se re-ataque si corresponde
+    selectObj(o.id);
+  }
+
+  // Uniforms
   if(o.type !== 'model' && m.material.uniforms) {
     applyUniforms(o);
   }
@@ -678,6 +786,7 @@ function applyUniforms(o){
   if(o.type === 'model') return;
   if(!m.material?.uniforms) return;
   const u=m.material.uniforms;
+
   u.chromaEnabled.value=s.chromaEnabled;
   u.chromaInvert.value=s.chromaInvert;
   u.keyColor.value.setRGB(s.keyR, s.keyG, s.keyB);
@@ -699,6 +808,7 @@ const bind = (id, k, type='float') => {
     let v=e.target.value;
     if(type==='float') v=parseFloat(v);
     else if(type==='bool') v=e.target.checked;
+    else if(type==='str') v=String(v);
     updateObj(k,v);
     syncUI();
   });
@@ -707,6 +817,8 @@ const bind = (id, k, type='float') => {
 bind('projSelect','projection','str');
 bind('surfaceSelect','surface','str');
 bind('followViewer','followViewer','bool');
+bind('surfaceSize','surfaceSize','float');
+bind('surfaceHeight','surfaceHeight','float');
 
 bind('scale','scale');
 bind('dist','dist');
@@ -729,8 +841,13 @@ function selectObj(id) {
   const o = objects.find(x=>x.id===id);
 
   if(o) {
-    // Attach gizmo solo si plane o model (como tenías)
-    if(o.settings.projection === 'plane' || o.type === 'model') transformControl.attach(o.mesh);
+    // Gizmo:
+    // - plane y modelos siempre
+    // - 360/180 solo si NO está followViewer (para que puedas mover/salirte de la superficie)
+    const isImm = (o.settings.projection === '360' || o.settings.projection === '180');
+    const allowImmEdit = isImm && !o.settings.followViewer;
+
+    if(o.type === 'model' || o.settings.projection === 'plane' || allowImmEdit) transformControl.attach(o.mesh);
     else transformControl.detach();
 
     const isMedia = (o.type !== 'model');
@@ -759,18 +876,26 @@ function syncUI() {
   // Proyección
   if(o.type!=='model') document.getElementById('projSelect').value = s.projection;
 
-  const is360 = (s.projection === '360' || s.projection === '180');
-  document.getElementById('posControls').style.display = is360 ? 'none' : 'block';
+  const isImm = (s.projection === '360' || s.projection === '180');
 
-  document.getElementById('surfaceRow').style.display = is360 ? 'flex' : 'none';
-  document.getElementById('followRow').style.display = is360 ? 'flex' : 'none';
-  if(is360){
+  // Pos sliders 2D
+  document.getElementById('posControls').style.display = isImm ? 'none' : 'block';
+
+  // Surface controls
+  document.getElementById('surfaceRow').style.display = isImm ? 'flex' : 'none';
+  document.getElementById('followRow').style.display = isImm ? 'flex' : 'none';
+  document.getElementById('surfaceSizeRow').style.display = isImm ? 'flex' : 'none';
+  document.getElementById('surfaceHeightRow').style.display = isImm ? 'flex' : 'none';
+
+  if(isImm){
     document.getElementById('surfaceSelect').value = s.surface || 'sphere';
     document.getElementById('followViewer').checked = !!s.followViewer;
+    set('surfaceSize', s.surfaceSize ?? 20);
+    set('surfaceHeight', s.surfaceHeight ?? 0);
   }
 
   set('scale',s.scale);
-  if(!is360) {
+  if(!isImm) {
     set('dist',Math.abs(o.mesh.position.z));
     set('height',o.mesh.position.y);
   }
@@ -790,15 +915,39 @@ function syncUI() {
   }
 }
 
+function setKeyPreset(r,g,b, sim=0.4, smooth=0.05){
+  const o = objects.find(x=>x.id===activeId); if(!o) return;
+  if(o.type==='model') return;
+
+  o.settings.keyR = r; o.settings.keyG = g; o.settings.keyB = b;
+  o.settings.sim = sim;
+  o.settings.smooth = smooth;
+  o.settings.chromaEnabled = true;
+
+  applyUniforms(o);
+  syncUI();
+}
+
 window.centerActive = () => {
   const o=objects.find(x=>x.id===activeId);
   if(!o) return;
-  if(o.settings.projection==='plane' || o.type==='model'){
+
+  const s=o.settings;
+
+  if(s.projection==='plane' || o.type==='model'){
     o.mesh.position.set(0,1.6,-2);
     o.mesh.rotation.set(0,0,0);
     o.settings.dist=2; o.settings.height=1.6; o.settings.rotY=0;
     syncUI();
+    return;
   }
+
+  // 360/180
+  o.settings.followViewer = true;
+  o.settings.surfaceHeight = 0;
+  o.mesh.position.set(0, 0, 0);
+  o.mesh.rotation.set(0,0,0);
+  syncUI();
 };
 
 window.reloadVideo = () => {
@@ -822,9 +971,11 @@ window.deleteActive = () => {
 function updateList() {
   const l=document.getElementById('layerList'); l.innerHTML='';
   objects.forEach(o=>{
+    const isImm = (o.settings.projection==='360'||o.settings.projection==='180');
+    const ico = o.type==='model' ? '📦' : (isImm ? '🌐' : '🎬');
     const d=document.createElement('div');
     d.className=`layer-item ${o.id===activeId?'active':''}`;
-    d.innerHTML=`<span>${o.type==='model'?'📦':(o.settings.projection==='360'||o.settings.projection==='180'?'🌐':'🎬')}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.name}</span>`;
+    d.innerHTML=`<span>${ico}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.name}</span>`;
     d.onclick=()=>selectObj(o.id);
     l.appendChild(d);
   });
@@ -838,19 +989,23 @@ document.getElementById('checkOcclusion').addEventListener('change', e => {
 
 function toggleLoader(s){document.getElementById('loader').style.display=s?'flex':'none';}
 
-// ======= Mouse picking (Editor) =======
+// ======= Mouse picking =======
 function initMousePick(){
   raycaster = new THREE.Raycaster();
   renderer.domElement.addEventListener('pointerdown', (ev)=>{
-    if(xrSession) return; // en XR se selecciona con ray de controladores
+    if(xrSession) return;
     if(transformControl.dragging) return;
 
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
 
+    // picking: plane/model + 360 si NO followViewer (para poder editar soporte)
     const targets = objects
-      .filter(o=>o.settings.projection==='plane' || o.type==='model')
+      .filter(o=>{
+        const isImm = (o.settings.projection==='360'||o.settings.projection==='180');
+        return (o.settings.projection==='plane' || o.type==='model' || (isImm && !o.settings.followViewer));
+      })
       .map(o=>o.mesh);
 
     raycaster.setFromCamera(mouse, camera);
@@ -863,7 +1018,7 @@ function initMousePick(){
   });
 }
 
-// ======= Shortcuts (Editor) =======
+// ======= Shortcuts =======
 function initShortcuts(){
   window.addEventListener('keydown', (e)=>{
     if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;
@@ -875,11 +1030,6 @@ function initShortcuts(){
     if(e.key.toLowerCase() === 'r') transformControl.setMode('rotate');
     if(e.key.toLowerCase() === 's') transformControl.setMode('scale');
     if(e.key === 'Escape') transformControl.detach();
-
-    // Ejes (opcional)
-    if(e.key.toLowerCase() === 'x') transformControl.showX = true;
-    if(e.key.toLowerCase() === 'y') transformControl.showY = true;
-    if(e.key.toLowerCase() === 'z') transformControl.showZ = true;
   });
 }
 
@@ -889,7 +1039,7 @@ function tickGifs(dt){
     if(!o.gif) continue;
     const g=o.gif;
     g.t += dt;
-    if(g.t < 1/24) continue; // 24 fps aprox
+    if(g.t < 1/24) continue;
     g.t = 0;
     g.r.decodeAndBlitFrameRGBA(g.f, g.dat.data);
     g.ctx.putImageData(g.dat,0,0);
@@ -898,7 +1048,7 @@ function tickGifs(dt){
   }
 }
 
-// ======= VR SETUP =======
+// ======= VR =======
 function setupVR() {
   if('xr' in navigator) {
     navigator.xr.isSessionSupported('immersive-ar').then(s=>{
@@ -929,7 +1079,6 @@ async function startVR() {
 
   xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
   renderer.xr.setSession(xrSession);
-
   setMode(true);
 
   xrSession.addEventListener('end', ()=>{
@@ -938,7 +1087,7 @@ async function startVR() {
   });
 }
 
-// ======= CONTROLES VR (lo tuyo + selección segura) =======
+// ======= Controles VR =======
 function initRay() {
   rightRay = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-5)]),
@@ -965,7 +1114,13 @@ function handleVR(frame, dt) {
 
       const orig = new THREE.Vector3(pos.x, pos.y, pos.z);
       const dir = new THREE.Vector3(0,0,-1).applyQuaternion(rightRay.quaternion);
-      const targets = objects.filter(o=>o.settings.projection==='plane'||o.type==='model').map(o=>o.mesh);
+
+      // En VR: seleccionamos plane/model + 360 si NO followViewer
+      const targets = objects.filter(o=>{
+        const isImm = (o.settings.projection==='360'||o.settings.projection==='180');
+        return (o.settings.projection==='plane'||o.type==='model'||(isImm && !o.settings.followViewer));
+      }).map(o=>o.mesh);
+
       const hits = new THREE.Raycaster(orig, dir, 0, 10).intersectObjects(targets, true);
 
       if(hits.length>0) {
@@ -975,8 +1130,8 @@ function handleVR(frame, dt) {
         hoverId = found ? found.id : null;
       } else { rayCursor.visible=false; hoverId=null; }
 
-      ctrl.right.currPos = orig;
       ctrl.right.currQuat = rightRay.quaternion.clone();
+      ctrl.right.currPos = orig;
     }
   }
 
@@ -986,7 +1141,6 @@ function handleVR(frame, dt) {
     const grip = gp.buttons[1].pressed;
     const btnA = gp.buttons[4]?.pressed || gp.buttons[5]?.pressed;
 
-    // A: play/pause
     if(btnA && !ctrl.right.lastBtn && activeId) {
       const o = objects.find(x=>x.id===activeId);
       if(o && o.video) { if(o.video.paused) o.video.play(); else o.video.pause(); }
@@ -997,16 +1151,22 @@ function handleVR(frame, dt) {
     if(trig && !ctrl.right.lastTrig && hoverId) selectObj(hoverId);
     ctrl.right.lastTrig = trig;
 
-    // Grip: mover/rotar/escalar (como tenías)
     if(grip) {
       const obj = objects.find(o=>o.id===activeId);
       if(obj) {
-        if(obj.settings.projection==='plane'||obj.type==='model') {
+        const isImm = (obj.settings.projection==='360'||obj.settings.projection==='180');
+        const allowImmEdit = isImm && !obj.settings.followViewer;
+
+        // Permitir mover/rotar soporte 360 si allowImmEdit (misma lógica que modelos)
+        if(obj.settings.projection==='plane' || obj.type==='model' || allowImmEdit) {
           if(Math.abs(sx)>0.1) obj.mesh.position.x += sx*dt*2;
           if(Math.abs(sy)>0.1) obj.mesh.position.z += sy*dt*2;
+
           if(ctrl.right.gripped) {
             const dQ = ctrl.right.currQuat.clone().multiply(ctrl.right.lastQuat.clone().invert());
             obj.mesh.quaternion.premultiply(dQ);
+            // sincroniza altura soporte si es inmersivo
+            if(isImm) obj.settings.surfaceHeight = obj.mesh.position.y;
             syncUI();
           }
         }
@@ -1014,7 +1174,12 @@ function handleVR(frame, dt) {
         if(lSrc && lSrc.gamepad) {
           const lGrip = lSrc.gamepad.buttons[1].pressed;
           const lsy = lSrc.gamepad.axes[3]||0;
-          if(Math.abs(lsy)>0.1 && (obj.settings.projection==='plane'||obj.type==='model')) { obj.mesh.position.y -= lsy*dt; syncUI(); }
+
+          if(Math.abs(lsy)>0.1 && (obj.settings.projection==='plane'||obj.type==='model'||allowImmEdit)) {
+            obj.mesh.position.y -= lsy*dt;
+            if(isImm) obj.settings.surfaceHeight = obj.mesh.position.y;
+            syncUI();
+          }
 
           if(lGrip) {
             const lp = frame.getPose(lSrc.gripSpace, ref);
@@ -1031,34 +1196,33 @@ function handleVR(frame, dt) {
           } else ctrl.left.gripped = false;
         }
       }
-      ctrl.right.gripped = true; ctrl.right.lastQuat.copy(ctrl.right.currQuat);
+      ctrl.right.gripped = true;
+      ctrl.right.lastQuat.copy(ctrl.right.currQuat);
     } else ctrl.right.gripped = false;
   }
 }
 
-// ======= Render loop =======
+// ======= Render =======
 let lastT = performance.now();
 function render(t, frame) {
   const dt = Math.min(0.05, (t-lastT)/1000);
   lastT = t;
 
-  // editor orbit
   if(!xrSession) orbit.update();
-
-  // gifs
   tickGifs(dt);
 
-  // Follow viewer para 360/180
+  // Follow viewer (360/180) con altura global
   for(const o of objects){
     if(o.type === 'model') continue;
     const s=o.settings;
-    if((s.projection==='360' || s.projection==='180') && s.followViewer){
+    const isImm = (s.projection==='360'||s.projection==='180');
+    if(isImm && s.followViewer){
       const cam = renderer.xr.isPresenting ? renderer.xr.getCamera(camera) : camera;
       o.mesh.position.copy(cam.position);
+      o.mesh.position.y += (s.surfaceHeight ?? 0);
     }
   }
 
-  // vr controls
   if(frame) handleVR(frame, dt);
 
   renderer.render(scene, camera);
