@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MR Studio Diamond</title>
+  <title>MR Studio Diamond v2.5 (Smart Chroma)</title>
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
   <style>
     /* ESTILOS DE INTERFAZ (UI LIMPIA) */
@@ -18,8 +18,9 @@
       padding: 18px; overflow-y: auto; z-index: 100;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8);
       transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      scrollbar-width: thin; scrollbar-color: #444 transparent;
     }
-    .ui-panel.hidden { transform: translateX(-400px); }
+    .ui-panel.hidden { transform: translateX(-420px); }
 
     h2 { margin: 0 0 15px 0; font-size: 18px; color: #a29bfe; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
     .sec-head { font-size: 11px; font-weight: 700; color: #aaa; margin: 15px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -54,7 +55,7 @@
 <div class="loader" id="loader"><div class="spinner"></div><span>CARGANDO...</span></div>
 
 <div class="ui-panel" id="ui">
-  <h2>🥽 MR Studio Diamond</h2>
+  <h2>🥽 MR Studio Diamond v2.5</h2>
 
   <div class="sec-head">📂 Archivos <button class="warn" style="padding:4px; font-size:10px; width:auto; flex:0;" onclick="fileInput.click()">+ IMPORTAR</button></div>
   <input type="file" id="fileInput" accept="image/*,video/*,.gif,.glb,.gltf,.fbx,.obj" multiple style="display:none;" />
@@ -66,24 +67,34 @@
       <div class="row">
         <select id="projSelect">
           <option value="plane">Plano 2D</option>
-          <option value="360">Esfera 360° (Con Chroma)</option>
-          <option value="180">Domo 180°</option>
+          <option value="360">Esfera 360° (Inmersiva)</option>
+          <option value="180">Domo 180° (Inmersiva)</option>
         </select>
       </div>
       
       <div class="sec-head">📏 Transformación</div>
-      <div class="row"><label>Escala</label><input type="range" id="scale" min="0.1" max="5" step="0.05" value="1"><span class="val" id="v_scale">1.0</span></div>
-      <div class="row"><label>Distancia</label><input type="range" id="dist" min="0" max="15" step="0.1" value="2"><span class="val" id="v_dist">2.0</span></div>
-      <div class="row"><label>Altura</label><input type="range" id="height" min="-5" max="5" step="0.1" value="1.6"><span class="val" id="v_height">1.6</span></div>
+      <div class="row"><label>Escala</label><input type="range" id="scale" min="0.1" max="10" step="0.05" value="1"><span class="val" id="v_scale">1.0</span></div>
+      
+      <div id="posControls">
+        <div class="row"><label>Distancia</label><input type="range" id="dist" min="0" max="15" step="0.1" value="2"><span class="val" id="v_dist">2.0</span></div>
+        <div class="row"><label>Altura</label><input type="range" id="height" min="-5" max="5" step="0.1" value="1.6"><span class="val" id="v_height">1.6</span></div>
+      </div>
       <div class="row"><label>Rotación Y</label><input type="range" id="rotY" min="0" max="360" step="1" value="0"><span class="val" id="v_rotY">0</span></div>
   </div>
 
   <div id="mediaControls" style="display:none;">
-    <div class="sec-head">🖼️ Ajuste Visual (Offset)</div>
-    <div class="row"><label>Desfase X (H)</label><input type="range" id="offsetX" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetX">0.0</span></div>
-    <div class="row"><label>Desfase Y (V)</label><input type="range" id="offsetY" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetY">0.0</span></div>
+    
+    <div class="sec-head">🎨 Color & Imagen</div>
+    <div class="row"><label>Brillo</label><input type="range" id="brightness" min="-1" max="1" step="0.05" value="0"><span class="val" id="v_brightness">0.0</span></div>
+    <div class="row"><label>Contraste</label><input type="range" id="contrast" min="0" max="3" step="0.1" value="1"><span class="val" id="v_contrast">1.0</span></div>
+    <div class="row"><label>Saturación</label><input type="range" id="saturation" min="0" max="3" step="0.1" value="1"><span class="val" id="v_saturation">1.0</span></div>
+    <div class="row"><label>Gamma</label><input type="range" id="gamma" min="0.1" max="3" step="0.1" value="1"><span class="val" id="v_gamma">1.0</span></div>
 
-    <div class="sec-head">🎨 Chroma Key (RGB)</div>
+    <div class="sec-head">🖼️ Ajuste Visual</div>
+    <div class="row"><label>Desfase X</label><input type="range" id="offsetX" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetX">0.0</span></div>
+    <div class="row"><label>Desfase Y</label><input type="range" id="offsetY" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetY">0.0</span></div>
+
+    <div class="sec-head">🟩 Chroma Key Pro (Smart)</div>
     <div class="row">
       <label>Activar</label> <input type="checkbox" id="chromaActive" style="flex:0; width:18px; height:18px;">
       <label style="margin-left:15px">Invertir</label> <input type="checkbox" id="chromaInvert" style="flex:0; width:18px; height:18px;">
@@ -96,20 +107,20 @@
       <div id="colorPrev" style="height:8px; width:100%; border-radius:4px; background:#0f0; margin-top:6px; transition:0.3s;"></div>
     </div>
 
-    <div class="row"><label>Similitud</label><input type="range" id="sim" min="0" max="1" step="0.01" value="0.4"><span class="val" id="v_sim">0.4</span></div>
-    <div class="row"><label>Suavizado</label><input type="range" id="smooth" min="0" max="0.5" step="0.01" value="0.1"><span class="val" id="v_smooth">0.1</span></div>
+    <div class="row"><label>Similitud</label><input type="range" id="sim" min="0" max="1" step="0.001" value="0.4"><span class="val" id="v_sim">0.4</span></div>
+    <div class="row"><label>Suavizado</label><input type="range" id="smooth" min="0" max="0.5" step="0.001" value="0.05"><span class="val" id="v_smooth">0.05</span></div>
     <div class="row"><label>Opacidad</label><input type="range" id="opacity" min="0" max="1" step="0.05" value="1"><span class="val" id="v_opacity">1.0</span></div>
   </div>
 
   <div class="btn-group" style="margin-top:20px;">
     <button class="primary" onclick="centerActive()">🎯 Centrar</button>
-    <button class="warn" onclick="reloadVideo()">🔄 Recargar</button>
+    <button class="warn" onclick="reloadVideo()">🔄 Recargar Video</button>
     <button class="danger" onclick="deleteActive()">🗑️ Borrar</button>
   </div>
   
   <div class="row" style="margin-top:20px; font-size:11px; color:#888; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
     <label><input type="checkbox" id="checkGizmo" checked> Gizmos</label>
-    <label><input type="checkbox" id="checkOcclusion" checked> Oclusión</label>
+    <label title="Requiere reiniciar sesión VR"><input type="checkbox" id="checkOcclusion" checked> Oclusión (Mundo Real)</label>
   </div>
 </div>
 
@@ -133,13 +144,13 @@ let activeId = null;
 let transformControl;
 
 const ctrl = {
-  right: { gripped: false, lastPos: new THREE.Vector3(), lastQuat: new THREE.Quaternion(), lastTrig: false },
+  right: { gripped: false, lastPos: new THREE.Vector3(), lastQuat: new THREE.Quaternion(), lastTrig: false, lastBtn: false },
   left: { gripped: false },
   gesture: { active: false, startDist: 0, startScale: 1 }
 };
 let rightRay, rayCursor, hoverId;
 
-// SHADER DIAMOND
+// --- VERTEX SHADER STANDAR ---
 const vert = `
 varying vec2 vUv; 
 uniform vec2 offset; 
@@ -148,13 +159,18 @@ void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
 }`;
 
+// --- FRAGMENT SHADER: PROTECCIÓN DE PIEL/LABIOS + SMART DESPILL ---
 const frag = `
 uniform sampler2D map;
 uniform bool chromaEnabled, chromaInvert;
 uniform vec3 keyColor;
 uniform float similarity, smoothness, opacity;
+// Propiedades de imagen
+uniform float brightness, contrast, saturation, gamma;
+
 varying vec2 vUv;
 
+// Conversiones de color
 vec3 rgb2hsv(vec3 c) {
     vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -162,6 +178,15 @@ vec3 rgb2hsv(vec3 c) {
     float d = q.x - min(q.w, q.y);
     float e = 1.0e-10;
     return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 adjustColor(vec3 color) {
+    color += brightness;
+    color = (color - 0.5) * contrast + 0.5;
+    float gray = dot(color, vec3(0.299, 0.587, 0.114));
+    color = mix(vec3(gray), color, saturation);
+    color = pow(max(color, 0.0), vec3(1.0 / gamma));
+    return color;
 }
 
 void main() {
@@ -172,11 +197,46 @@ void main() {
     if (chromaEnabled) {
         vec3 hsv = rgb2hsv(col);
         vec3 kHsv = rgb2hsv(keyColor);
-        float d = distance(hsv.xy, kHsv.xy); 
-        float mask = smoothstep(similarity, similarity + smoothness, d);
-        if (!chromaInvert) alpha *= mask;
-        else alpha *= (1.0 - mask);
+        
+        // 1. DISTANCIA DE COLOR (MÁSCARA)
+        // Usamos una distancia ponderada: El Matiz (Hue) es mucho más importante que la Saturación/Brillo
+        // Esto ayuda a diferenciar labios rojos de un fondo verde oscuro, aunque tengan brillo similar.
+        float hueDist = abs(hsv.x - kHsv.x);
+        if (hueDist > 0.5) hueDist = 1.0 - hueDist; // Corrección circular del hue
+        float dist = sqrt(pow(hueDist * 2.5, 2.0) + pow(hsv.y - kHsv.y, 2.0)); 
+        
+        float mask = smoothstep(similarity, similarity + smoothness, dist);
+        
+        if (!chromaInvert) {
+            alpha *= mask;
+
+            // 2. SMART DESPILL (EVITA LABIOS GRISES)
+            // En lugar de desaturar, limitamos el canal dominante del chroma.
+            // Detectamos cuál es el canal dominante del Key Color (R, G o B)
+            float maxRB = max(col.r, col.b);
+            float maxRG = max(col.r, col.g);
+            float maxGB = max(col.g, col.b);
+
+            // Si el Key es VERDE (común), y el pixel tiene mucho verde, lo bajamos al nivel de los otros canales.
+            if (keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
+                if (col.g > maxRB) col.g = mix(col.g, maxRB, 1.0 - mask); 
+            }
+            // Si el Key es AZUL
+            else if (keyColor.b > keyColor.g && keyColor.b > keyColor.r) {
+                if (col.b > maxRG) col.b = mix(col.b, maxRG, 1.0 - mask);
+            }
+            // Si el Key es ROJO (raro, pero posible)
+            else if (keyColor.r > keyColor.g && keyColor.r > keyColor.b) {
+                if (col.r > maxGB) col.r = mix(col.r, maxGB, 1.0 - mask);
+            }
+
+        } else {
+            alpha *= (1.0 - mask);
+        }
     }
+    
+    // Aplicar ajustes de imagen (brillo/contraste) AL FINAL
+    col = adjustColor(col);
     
     gl_FragColor = vec4(col, alpha);
     if (alpha < 0.01) discard; 
@@ -197,7 +257,7 @@ function init() {
   const d = new THREE.DirectionalLight(0xffffff, 1.5); d.position.set(2, 5, 2); scene.add(d);
 
   transformControl = new TransformControls(camera, renderer.domElement);
-  transformControl.addEventListener('dragging-changed', e=>{});
+  transformControl.addEventListener('dragging-changed', e=>{}); 
   scene.add(transformControl);
 
   setupVR(); initRay();
@@ -245,10 +305,8 @@ async function loadVideo(url, name) {
 
   const tex = new THREE.VideoTexture(vid);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+  tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
   
   let proj = 'plane';
   if(name.includes('360')) proj='360';
@@ -262,7 +320,7 @@ async function loadVideo(url, name) {
   
   if(proj !== 'plane') {
       obj.mesh.position.set(0, 0, 0);
-      obj.mesh.scale.set(-1, 1, 1);
+      obj.settings.scale = 1; 
       obj.settings.dist = 0;
   } else {
       obj.mesh.position.set(0, 1.6, -2);
@@ -322,14 +380,13 @@ function createMesh(proj, tex, aspect) {
   let geo, side=THREE.DoubleSide;
   
   if(proj === '360') {
-    geo = new THREE.SphereGeometry(10, 64, 64);
+    geo = new THREE.SphereGeometry(20, 64, 64);
     side = THREE.BackSide; 
   } else if(proj === '180') {
-    geo = new THREE.SphereGeometry(10, 64, 64, 0, Math.PI);
+    geo = new THREE.SphereGeometry(20, 64, 64, 0, Math.PI);
     geo.rotateY(-Math.PI/2);
     side = THREE.BackSide;
   } else {
-    // La geometría ya incluye el ASPECT RATIO en el ancho
     geo = new THREE.PlaneGeometry(aspect, 1);
   }
 
@@ -339,7 +396,8 @@ function createMesh(proj, tex, aspect) {
       chromaEnabled:{value:false}, chromaInvert:{value:false}, keyColor:{value:new THREE.Color(0,1,0)},
       similarity:{value:0.4}, smoothness:{value:0.1}, 
       offset:{value:new THREE.Vector2(0,0)}, 
-      opacity:{value:1.0}
+      opacity:{value:1.0},
+      brightness:{value:0.0}, contrast:{value:1.0}, saturation:{value:1.0}, gamma:{value:1.0}
     },
     vertexShader: vert, fragmentShader: frag,
     transparent: true, side: side, 
@@ -356,12 +414,16 @@ function createMesh(proj, tex, aspect) {
 }
 
 function defSettings() {
-    return { scale:1, dist:2, height:1.6, rotY:0, projection:'plane', chromaEnabled:false, chromaInvert:false, keyR:0, keyG:1, keyB:0, sim:0.4, smooth:0.1, offsetX:0, offsetY:0, opac:1 }; 
+    return { 
+        scale:1, dist:2, height:1.6, rotY:0, projection:'plane', 
+        chromaEnabled:false, chromaInvert:false, keyR:0, keyG:1, keyB:0, sim:0.4, smooth:0.05, 
+        offsetX:0, offsetY:0, opac:1,
+        brightness:0, contrast:1, saturation:1, gamma:1
+    }; 
 }
 function uid() { return Math.random().toString(36).substr(2,9); }
 function addObj(obj) { scene.add(obj.mesh); objects.push(obj); updateList(); selectObj(obj.id); }
 
-// === CORRECCIÓN DE ESCALA AQUÍ ===
 function updateObj(k, v) {
   const o = objects.find(x=>x.id===activeId); if(!o) return;
   o.settings[k]=v;
@@ -379,11 +441,10 @@ function updateObj(k, v) {
     
     if(v!=='plane'){ 
         nm.position.set(0,0,0); 
-        nm.scale.set(-s.scale, s.scale, s.scale);
+        nm.scale.set(s.scale, s.scale, s.scale); 
         o.settings.dist=0; 
     } else { 
         nm.position.set(0,1.6,-2); 
-        // FIX: No multiplicar por 'ar' porque la geometría ya tiene el ancho correcto
         nm.scale.set(s.scale, s.scale, s.scale); 
         o.settings.dist=2; 
     }
@@ -393,19 +454,15 @@ function updateObj(k, v) {
 
   if(k==='scale') {
      const bs = o.baseScale || 1;
-     const sgn = (s.projection !== 'plane') ? -1 : 1; 
-     
-     // FIX: Eliminada la multiplicación redundante por 'ar' en modo plane
-     // Esto evita el estiramiento asimétrico
-     m.scale.set(s.scale * bs * sgn, s.scale * bs, s.scale * bs);
+     m.scale.set(s.scale * bs, s.scale * bs, s.scale * bs);
   }
   
   if(s.projection==='plane' || o.type==='model') {
       if(k==='dist') m.position.z = -s.dist;
       if(k==='height') m.position.y = s.height;
+  } else {
+      m.position.set(0,0,0);
   }
-  
-  if(s.projection !== 'plane') m.position.set(0,0,0); 
 
   if(k==='rotY') m.rotation.y = THREE.MathUtils.degToRad(s.rotY) + (s.projection==='180'?-Math.PI/2:0);
 
@@ -416,6 +473,11 @@ function updateObj(k, v) {
     u.similarity.value=s.sim; u.smoothness.value=s.smooth; 
     u.offset.value.set(s.offsetX, s.offsetY); 
     u.opacity.value=s.opac;
+    
+    u.brightness.value=s.brightness;
+    u.contrast.value=s.contrast;
+    u.saturation.value=s.saturation;
+    u.gamma.value=s.gamma;
   }
 }
 
@@ -431,6 +493,7 @@ bind('keyR','keyR'); bind('keyG','keyG'); bind('keyB','keyB');
 bind('sim','sim'); bind('smooth','smooth'); 
 bind('offsetX','offsetX'); bind('offsetY','offsetY'); 
 bind('opacity','opac');
+bind('brightness','brightness'); bind('contrast','contrast'); bind('saturation','saturation'); bind('gamma','gamma');
 
 function selectObj(id) {
   activeId = id;
@@ -441,7 +504,7 @@ function selectObj(id) {
 
     const isMedia = (o.type !== 'model');
     document.getElementById('mediaControls').style.display = isMedia ? 'block' : 'none';
-    document.getElementById('generalControls').style.display = 'block'; // Asegurar visibilidad
+    document.getElementById('generalControls').style.display = 'block';
     syncUI();
   } else {
     transformControl.detach();
@@ -456,7 +519,15 @@ function syncUI() {
   const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; const t=document.getElementById('v_'+id); if(t)t.innerText=(typeof v==='number')?v.toFixed(2):v; };
 
   if(o.type!=='model') document.getElementById('projSelect').value = s.projection;
-  set('scale',s.scale); set('dist',Math.abs(o.mesh.position.z)); set('height',o.mesh.position.y); set('rotY',s.rotY);
+  
+  const is360 = (s.projection === '360' || s.projection === '180');
+  document.getElementById('posControls').style.display = is360 ? 'none' : 'block';
+
+  set('scale',s.scale); 
+  if(!is360) {
+    set('dist',Math.abs(o.mesh.position.z)); set('height',o.mesh.position.y);
+  }
+  set('rotY',s.rotY);
   
   if(o.type !== 'model' && o.mesh.material.uniforms) {
     document.getElementById('chromaActive').checked = s.chromaEnabled;
@@ -466,6 +537,7 @@ function syncUI() {
     set('sim',s.sim); set('smooth',s.smooth); 
     set('offsetX',s.offsetX); set('offsetY',s.offsetY);
     set('opacity',s.opac);
+    set('brightness',s.brightness); set('contrast',s.contrast); set('saturation',s.saturation); set('gamma',s.gamma);
   }
 }
 
@@ -486,12 +558,18 @@ function updateList() {
 }
 window.toggleUI=()=>document.getElementById('ui').classList.toggle('hidden');
 document.getElementById('checkGizmo').addEventListener('change',e=>transformControl.visible=e.target.checked);
+
+document.getElementById('checkOcclusion').addEventListener('change', e => {
+   if(xrSession) {
+      alert("Para cambiar la configuración de oclusión real (Depth API), sal y vuelve a entrar en MR.");
+   }
+});
+
 function toggleLoader(s){document.getElementById('loader').style.display=s?'flex':'none';}
 
 // === VR SETUP ===
 function setupVR() { if('xr' in navigator) navigator.xr.isSessionSupported('immersive-ar').then(s=>{ if(s) { const b=document.getElementById('vrBtn'); b.style.display='block'; b.onclick=startVR; }}); }
 
-// === CORRECCIÓN DE OCLUSIÓN AQUÍ ===
 async function startVR() {
   const useOcclusion = document.getElementById('checkOcclusion').checked;
   const sessionInit = {
@@ -502,7 +580,6 @@ async function startVR() {
   
   if(useOcclusion) {
       sessionInit.optionalFeatures.push('depth-sensing');
-      // FIX: Priorizar 'gpu-optimized' para que la oclusión visual funcione en WebXR
       sessionInit.depthSensing = { 
           usagePreference: ["gpu-optimized", "cpu-optimized"], 
           dataFormatPreference: ["luminance-alpha"] 
@@ -549,9 +626,20 @@ function handleVR(frame, dt) {
 
   if(rSrc && rSrc.gamepad) {
     const gp = rSrc.gamepad;
-    const trig = gp.buttons[0].pressed; const grip = gp.buttons[1].pressed;
-    const sx = gp.axes[2]||0; const sy = gp.axes[3]||0;
+    const trig = gp.buttons[0].pressed; 
+    const grip = gp.buttons[1].pressed;
+    // BOTON A/X para CONTROL DE VIDEO
+    const btnA = gp.buttons[4]?.pressed || gp.buttons[5]?.pressed; 
 
+    if(btnA && !ctrl.right.lastBtn && activeId) {
+        const o = objects.find(x=>x.id===activeId);
+        if(o && o.video) {
+            if(o.video.paused) o.video.play(); else o.video.pause();
+        }
+    }
+    ctrl.right.lastBtn = btnA;
+
+    const sx = gp.axes[2]||0; const sy = gp.axes[3]||0;
     if(trig && !ctrl.right.lastTrig && hoverId) selectObj(hoverId);
     ctrl.right.lastTrig = trig;
 
