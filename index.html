@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MR Studio Diamond v3.0 (Red Protection)</title>
+  <title>MR Studio Diamond v3.5 (Flip + Red Protect)</title>
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
   <style>
     /* ESTILOS DE INTERFAZ (UI LIMPIA) */
@@ -55,7 +55,7 @@
 <div class="loader" id="loader"><div class="spinner"></div><span>CARGANDO...</span></div>
 
 <div class="ui-panel" id="ui">
-  <h2>🥽 MR Studio Diamond v3</h2>
+  <h2>🥽 MR Studio Diamond v3.5</h2>
 
   <div class="sec-head">📂 Archivos <button class="warn" style="padding:4px; font-size:10px; width:auto; flex:0;" onclick="fileInput.click()">+ IMPORTAR</button></div>
   <input type="file" id="fileInput" accept="image/*,video/*,.gif,.glb,.gltf,.fbx,.obj" multiple style="display:none;" />
@@ -73,7 +73,14 @@
       </div>
       
       <div class="sec-head">📏 Transformación</div>
-      <div class="row"><label>Escala</label><input type="range" id="scale" min="0.1" max="10" step="0.05" value="1"><span class="val" id="v_scale">1.0</span></div>
+      <div class="row">
+        <label>Escala</label><input type="range" id="scale" min="0.1" max="10" step="0.05" value="1">
+        <span class="val" id="v_scale">1.0</span>
+      </div>
+      <div class="row">
+        <label>Modo Espejo (Flip H)</label>
+        <input type="checkbox" id="checkFlip" style="flex:0; width:18px; height:18px;">
+      </div>
       
       <div id="posControls">
         <div class="row"><label>Distancia</label><input type="range" id="dist" min="0" max="15" step="0.1" value="2"><span class="val" id="v_dist">2.0</span></div>
@@ -150,7 +157,6 @@ const ctrl = {
 };
 let rightRay, rayCursor, hoverId;
 
-// --- VERTEX SHADER STANDAR ---
 const vert = `
 varying vec2 vUv; 
 uniform vec2 offset; 
@@ -159,7 +165,6 @@ void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
 }`;
 
-// --- FRAGMENT SHADER: PROTECCIÓN DE ROJOS (FIX LABIOS/OJOS) ---
 const frag = `
 uniform sampler2D map;
 uniform bool chromaEnabled, chromaInvert;
@@ -169,7 +174,6 @@ uniform float brightness, contrast, saturation, gamma;
 
 varying vec2 vUv;
 
-// Conversiones
 vec3 rgb2hsv(vec3 c) {
     vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -197,35 +201,24 @@ void main() {
         vec3 hsv = rgb2hsv(col);
         vec3 kHsv = rgb2hsv(keyColor);
         
-        // 1. CÁLCULO DE DISTANCIA (RELAJADO)
         float hueDist = abs(hsv.x - kHsv.x);
         if (hueDist > 0.5) hueDist = 1.0 - hueDist;
         float dist = sqrt(pow(hueDist * 2.0, 2.0) + pow(hsv.y - kHsv.y, 2.0)); 
         
         float mask = smoothstep(similarity, similarity + smoothness, dist);
         
-        // 2. PROTECCIÓN DE ROJOS (SOLUCIÓN A OJOS/BOCA)
+        // PROTECCIÓN DE ROJOS (Ojos/Labios)
         float protection = 0.0;
-        
-        // Si el chroma es Verde
         if(keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
-            // Proteger si el pixel tiene más rojo que verde
             protection = (col.r - col.g) * 3.0; 
-        }
-        // Si el chroma es Azul
-        else if(keyColor.b > keyColor.r && keyColor.b > keyColor.g) {
+        } else if(keyColor.b > keyColor.r && keyColor.b > keyColor.g) {
             protection = (col.r - col.b) * 3.0;
         }
 
-        // Si es rojizo, forzamos la máscara a ser visible
-        if(protection > 0.0) {
-            mask = clamp(mask + protection, 0.0, 1.0);
-        }
+        if(protection > 0.0) mask = clamp(mask + protection, 0.0, 1.0);
 
         if (!chromaInvert) {
             alpha *= mask;
-            
-            // 3. DESPILL SUAVE
             if(mask < 0.9) {
                float maxRB = max(col.r, col.b);
                float maxRG = max(col.r, col.g);
@@ -415,7 +408,7 @@ function createMesh(proj, tex, aspect) {
 
 function defSettings() {
     return { 
-        scale:1, dist:2, height:1.6, rotY:0, projection:'plane', 
+        scale:1, dist:2, height:1.6, rotY:0, projection:'plane', flipX: false,
         chromaEnabled:false, chromaInvert:false, keyR:0, keyG:1, keyB:0, sim:0.4, smooth:0.05, 
         offsetX:0, offsetY:0, opac:1,
         brightness:0, contrast:1, saturation:1, gamma:1
@@ -452,9 +445,12 @@ function updateObj(k, v) {
     scene.add(nm); selectObj(o.id); return;
   }
 
-  if(k==='scale') {
+  // LOGICA DE ESCALA + ESPEJO (FLIP)
+  if(k==='scale' || k==='flipX') {
      const bs = o.baseScale || 1;
-     m.scale.set(s.scale * bs, s.scale * bs, s.scale * bs);
+     // Si flipX es true, multiplicamos por -1
+     const dir = s.flipX ? -1 : 1;
+     m.scale.set(s.scale * bs * dir, s.scale * bs, s.scale * bs);
   }
   
   if(s.projection==='plane' || o.type==='model') {
@@ -494,6 +490,7 @@ bind('sim','sim'); bind('smooth','smooth');
 bind('offsetX','offsetX'); bind('offsetY','offsetY'); 
 bind('opacity','opac');
 bind('brightness','brightness'); bind('contrast','contrast'); bind('saturation','saturation'); bind('gamma','gamma');
+bind('checkFlip', 'flipX', 'bool'); // BIND DEL CHECKBOX ESPEJO
 
 function selectObj(id) {
   activeId = id;
@@ -528,6 +525,7 @@ function syncUI() {
     set('dist',Math.abs(o.mesh.position.z)); set('height',o.mesh.position.y);
   }
   set('rotY',s.rotY);
+  document.getElementById('checkFlip').checked = s.flipX; // SYNC ESPEJO
   
   if(o.type !== 'model' && o.mesh.material.uniforms) {
     document.getElementById('chromaActive').checked = s.chromaEnabled;
@@ -628,7 +626,6 @@ function handleVR(frame, dt) {
     const gp = rSrc.gamepad;
     const trig = gp.buttons[0].pressed; 
     const grip = gp.buttons[1].pressed;
-    // BOTON A/X para CONTROL DE VIDEO
     const btnA = gp.buttons[4]?.pressed || gp.buttons[5]?.pressed; 
 
     if(btnA && !ctrl.right.lastBtn && activeId) {
@@ -679,21 +676,6 @@ function handleVR(frame, dt) {
       ctrl.right.gripped = true; ctrl.right.lastQuat.copy(ctrl.right.currQuat);
     } else ctrl.right.gripped = false;
   }
-}
-
-function render(t) {
-  const dt=0.016; const time=t/1000;
-  if(xrSession) handleVR(renderer.xr.getFrame(), dt);
-  objects.forEach(o=>{
-    if(o.type==='gif' && o.gif) {
-      const g=o.gif;
-      if(time-g.t > 0.08) {
-        try { g.ctx.clearRect(0,0,g.ctx.canvas.width,g.ctx.canvas.height); g.r.decodeAndBlitFrameRGBA(g.f, g.dat.data); g.ctx.putImageData(g.dat, 0, 0); g.tex.needsUpdate=true; g.f=(g.f+1)%g.num; g.t=time; } catch(e){}
-      }
-    }
-    if(o.type==='video' && o.tex) o.tex.needsUpdate = true;
-  });
-  renderer.render(scene, camera);
 }
 
 init();
