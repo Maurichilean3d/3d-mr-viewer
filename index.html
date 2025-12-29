@@ -364,4 +364,397 @@ async function loadGif(file, name) {
 async function loadImg(url, name) {
   const tex = await new THREE.TextureLoader().loadAsync(url);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.Repeat
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+  const mesh = createMesh('plane', 'sphere', tex, tex.image.width/tex.image.height);
+  mesh.position.set(0, 1.6, -2);
+  const obj = { id:uid(), mesh, name, type:'image', tex, settings:defSettings() };
+  addObj(obj);
+}
+
+async function load3D(url, name, type) {
+  let m;
+  if(type==='gltf') m=(await new GLTFLoader().loadAsync(url)).scene;
+  else if(type==='fbx') m=await new FBXLoader().loadAsync(url);
+  else m=await new OBJLoader().loadAsync(url);
+  
+  const box = new THREE.Box3().setFromObject(m);
+  const sz = box.getSize(new THREE.Vector3()).length();
+  const sc = (sz>0 && sz<1000) ? 2/sz : 1; 
+  m.scale.setScalar(sc);
+  m.position.set(0, 1, -2);
+  m.traverse(c=>{ if(c.isMesh) { c.material.transparent=true; c.material.depthWrite=true; c.castShadow=true; }});
+  
+  const obj = { id:uid(), mesh:m, name, type:'model', settings:defSettings() };
+  obj.baseScale = sc;
+  addObj(obj);
+}
+
+// NUEVA FUNCIÓN CREATEMESH CON SOPORTE DE FORMAS (Cubo, Esfera, Ovoide)
+function createMesh(proj, shape, tex, aspect) {
+  let geo, side=THREE.DoubleSide;
+  
+  if(proj === '360' || proj === '180') {
+    // SELECCIÓN DE GEOMETRÍA
+    if(shape === 'cube') {
+        geo = new THREE.BoxGeometry(30, 30, 30);
+    } else {
+        // Esfera (base para Sphere y Ovoid)
+        // Usamos thetaLength para domo 180 si es necesario
+        const tLen = (proj === '180') ? Math.PI : Math.PI*2;
+        geo = new THREE.SphereGeometry(20, 64, 64, 0, tLen);
+    }
+
+    if(proj === '180') geo.rotateY(-Math.PI/2);
+    side = THREE.BackSide; 
+  } else {
+    geo = new THREE.PlaneGeometry(aspect, 1);
+  }
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      map: { value: tex },
+      chromaEnabled:{value:false}, chromaInvert:{value:false}, keyColor:{value:new THREE.Color(0,1,0)},
+      similarity:{value:0.4}, smoothness:{value:0.1}, 
+      offset:{value:new THREE.Vector2(0,0)}, 
+      opacity:{value:1.0},
+      brightness:{value:0.0}, contrast:{value:1.0}, saturation:{value:1.0}, gamma:{value:1.0}
+    },
+    vertexShader: vert, fragmentShader: frag,
+    transparent: true, side: side, 
+    depthWrite: (proj==='plane'), 
+    depthTest: true
+  });
+  
+  const mesh = new THREE.Mesh(geo, mat);
+  if(proj !== 'plane') {
+      mesh.frustumCulled = false; 
+      mesh.renderOrder = -1; 
+  }
+  return mesh;
+}
+
+function defSettings() {
+    return { 
+        scale:1, dist:2, height:1.6, rotY:0, projection:'plane', shape:'sphere', flipX: false,
+        chromaEnabled:false, chromaInvert:false, keyR:0, keyG:1, keyB:0, sim:0.4, smooth:0.05, 
+        offsetX:0, offsetY:0, opac:1,
+        brightness:0, contrast:1, saturation:1, gamma:1
+    }; 
+}
+function uid() { return Math.random().toString(36).substr(2,9); }
+function addObj(obj) { scene.add(obj.mesh); objects.push(obj); updateList(); selectObj(obj.id); }
+
+function updateObj(k, v) {
+  const o = objects.find(x=>x.id===activeId); if(!o) return;
+  o.settings[k]=v;
+  const s = o.settings; const m = o.mesh;
+
+  // CAMBIO DE PROYECCIÓN O FORMA
+  if(k==='projection' || k==='shape') {
+    scene.remove(m);
+    let ar=1.77; 
+    if(o.video) ar=o.video.videoWidth/o.video.videoHeight;
+    else if(o.tex && o.tex.image) ar=o.tex.image.width/o.tex.image.height;
+    
+    // Pasamos projection y shape actualizados
+    const nm = createMesh(s.projection, s.shape, o.tex||m.material.uniforms?.map.value, ar);
+    
+    // Mantener transformaciones previas (importante para control 3D)
+    nm.position.copy(m.position);
+    nm.rotation.copy(m.rotation);
+    nm.scale.copy(m.scale); 
+    
+    o.mesh=nm; 
+    
+    // Si pasamos a Plano, resetear a posición cómoda si estaba en 0,0,0
+    if(s.projection === 'plane' && k === 'projection'){ 
+        nm.position.set(0,1.6,-2); 
+        nm.scale.set(1,1,1);
+        o.settings.dist=2; 
+        o.settings.scale=1;
+    } 
+    
+    scene.add(nm); selectObj(o.id); return; // Return para reaplicar lógica de escala abajo
+  }
+
+  // LOGICA DE ESCALA + ESPEJO (FLIP) + OVOIDE
+  if(k==='scale' || k==='flipX' || k==='shape') {
+     const bs = o.baseScale || 1;
+     const dir = s.flipX ? -1 : 1;
+     
+     // Base scale
+     let sx = s.scale * bs * dir;
+     let sy = s.scale * bs;
+     let sz = s.scale * bs;
+
+     // Si es OVOIDE, estiramos Y un 30% extra
+     if(s.projection !== 'plane' && s.shape === 'ovoid') {
+         sy *= 1.4; // Estirar verticalmente
+         sx *= 0.85; // Comprimir un poco horizontalmente
+         sz *= 0.85;
+     }
+
+     m.scale.set(sx, sy, sz);
+  }
+  
+  // MOVIMIENTO MANUAL DESDE UI (Solo si no estamos en modo 360 movido por VR)
+  // Pero permitimos que el slider funcione siempre para ajuste fino
+  if(k==='dist' || k==='height') {
+      if(s.projection === 'plane') {
+         if(k==='dist') m.position.z = -s.dist;
+         if(k==='height') m.position.y = s.height;
+      } else {
+         // Para 360, movemos relativo o absoluto? Mejor dejamos libre control por Gizmo/VR
+         // y sliders solo si plano.
+      }
+  }
+
+  if(k==='rotY') m.rotation.y = THREE.MathUtils.degToRad(s.rotY) + (s.projection==='180'?-Math.PI/2:0);
+
+  if(o.type !== 'model' && m.material.uniforms) {
+    const u=m.material.uniforms;
+    u.chromaEnabled.value=s.chromaEnabled; u.chromaInvert.value=s.chromaInvert;
+    u.keyColor.value.setRGB(s.keyR, s.keyG, s.keyB);
+    u.similarity.value=s.sim; u.smoothness.value=s.smooth; 
+    u.offset.value.set(s.offsetX, s.offsetY); 
+    u.opacity.value=s.opac;
+    
+    u.brightness.value=s.brightness;
+    u.contrast.value=s.contrast;
+    u.saturation.value=s.saturation;
+    u.gamma.value=s.gamma;
+  }
+}
+
+const bind = (id, k, type='float') => {
+  document.getElementById(id).addEventListener('input', e=>{
+    let v=e.target.value; if(type==='float')v=parseFloat(v); else if(type==='bool')v=e.target.checked;
+    updateObj(k,v); syncUI();
+  });
+};
+bind('projSelect','projection','str'); 
+bind('shapeSelect','shape','str'); // BIND FORMA
+bind('scale','scale'); bind('dist','dist'); bind('height','height'); bind('rotY','rotY');
+bind('chromaActive','chromaEnabled','bool'); bind('chromaInvert','chromaInvert','bool');
+bind('keyR','keyR'); bind('keyG','keyG'); bind('keyB','keyB');
+bind('sim','sim'); bind('smooth','smooth'); 
+bind('offsetX','offsetX'); bind('offsetY','offsetY'); 
+bind('opacity','opac');
+bind('brightness','brightness'); bind('contrast','contrast'); bind('saturation','saturation'); bind('gamma','gamma');
+bind('checkFlip', 'flipX', 'bool');
+
+function selectObj(id) {
+  activeId = id;
+  const o = objects.find(x=>x.id===id);
+  if(o) {
+    // AHORA SIEMPRE ATTACH (Control total 3D para todo)
+    transformControl.attach(o.mesh);
+
+    const isMedia = (o.type !== 'model');
+    document.getElementById('mediaControls').style.display = isMedia ? 'block' : 'none';
+    document.getElementById('generalControls').style.display = 'block';
+    syncUI();
+  } else {
+    transformControl.detach();
+    document.getElementById('mediaControls').style.display = 'none';
+  }
+  updateList();
+}
+
+function syncUI() {
+  const o = objects.find(x=>x.id===activeId); if(!o) return;
+  const s = o.settings;
+  const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; const t=document.getElementById('v_'+id); if(t)t.innerText=(typeof v==='number')?v.toFixed(2):v; };
+
+  if(o.type!=='model') {
+      document.getElementById('projSelect').value = s.projection;
+      document.getElementById('shapeSelect').value = s.shape;
+  }
+  
+  const is360 = (s.projection === '360' || s.projection === '180');
+  document.getElementById('posControls').style.display = is360 ? 'none' : 'block';
+  // Mostrar selector de forma solo si es inmersivo
+  document.getElementById('shapeRow').style.display = is360 ? 'flex' : 'none';
+
+  set('scale',s.scale); 
+  if(!is360) {
+    set('dist',Math.abs(o.mesh.position.z)); set('height',o.mesh.position.y);
+  }
+  set('rotY',s.rotY);
+  document.getElementById('checkFlip').checked = s.flipX;
+  
+  if(o.type !== 'model' && o.mesh.material.uniforms) {
+    document.getElementById('chromaActive').checked = s.chromaEnabled;
+    document.getElementById('chromaInvert').checked = s.chromaInvert;
+    set('keyR',s.keyR); set('keyG',s.keyG); set('keyB',s.keyB);
+    document.getElementById('colorPrev').style.background = `rgb(${s.keyR*255},${s.keyG*255},${s.keyB*255})`;
+    set('sim',s.sim); set('smooth',s.smooth); 
+    set('offsetX',s.offsetX); set('offsetY',s.offsetY);
+    set('opacity',s.opac);
+    set('brightness',s.brightness); set('contrast',s.contrast); set('saturation',s.saturation); set('gamma',s.gamma);
+  }
+}
+
+window.centerActive = () => { const o=objects.find(x=>x.id===activeId); if(o){ o.mesh.position.set(0,1.6,-2); o.mesh.rotation.set(0,0,0); o.settings.dist=2; o.settings.height=1.6; syncUI(); }};
+window.reloadVideo = () => {
+    const o=objects.find(x=>x.id===activeId);
+    if(o && o.video) { o.video.pause(); o.video.currentTime=0; o.video.play().catch(e=>console.log(e)); }
+};
+window.deleteActive = () => {
+  const i = objects.findIndex(x=>x.id===activeId); if(i>-1) { const o=objects[i]; scene.remove(o.mesh); if(o.video){o.video.pause();o.video.remove();} if(o.mesh.geometry)o.mesh.geometry.dispose(); objects.splice(i,1); activeId=null; selectObj(null); }
+};
+function updateList() {
+  const l=document.getElementById('layerList'); l.innerHTML='';
+  objects.forEach(o=>{
+    const d=document.createElement('div'); d.className=`layer-item ${o.id===activeId?'active':''}`;
+    d.innerHTML=`<span>${o.type==='model'?'📦':'🎬'}</span> <span>${o.name}</span>`; d.onclick=()=>selectObj(o.id); l.appendChild(d);
+  });
+}
+window.toggleUI=()=>document.getElementById('ui').classList.toggle('hidden');
+document.getElementById('checkGizmo').addEventListener('change',e=>transformControl.visible=e.target.checked);
+
+document.getElementById('checkOcclusion').addEventListener('change', e => {
+   if(xrSession) {
+      alert("Para cambiar la configuración de oclusión real (Depth API), sal y vuelve a entrar en MR.");
+   }
+});
+
+function toggleLoader(s){document.getElementById('loader').style.display=s?'flex':'none';}
+
+// === VR SETUP ===
+function setupVR() { if('xr' in navigator) navigator.xr.isSessionSupported('immersive-ar').then(s=>{ if(s) { const b=document.getElementById('vrBtn'); b.style.display='block'; b.onclick=startVR; }}); }
+
+async function startVR() {
+  const useOcclusion = document.getElementById('checkOcclusion').checked;
+  const sessionInit = {
+      requiredFeatures: ['local-floor'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: document.body }
+  };
+  
+  if(useOcclusion) {
+      sessionInit.optionalFeatures.push('depth-sensing');
+      sessionInit.depthSensing = { 
+          usagePreference: ["gpu-optimized", "cpu-optimized"], 
+          dataFormatPreference: ["luminance-alpha"] 
+      };
+  }
+  
+  xrSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
+  renderer.xr.setSession(xrSession);
+  xrSession.addEventListener('end', ()=>xrSession=null);
+}
+
+// === CONTROLES VR ===
+function initRay() {
+  rightRay = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-5)]), new THREE.LineBasicMaterial({color:0x6c5ce7}));
+  scene.add(rightRay);
+  rayCursor = new THREE.Mesh(new THREE.SphereGeometry(0.02), new THREE.MeshBasicMaterial({color:0xff7675}));
+  scene.add(rayCursor);
+}
+
+function render() {
+    renderer.render(scene, camera);
+    const dt = 0.015;
+    if(xrSession) handleVR(renderer.xr.getFrame(), dt);
+    
+    // Animar GIF
+    const ms = Date.now();
+    objects.forEach(o=>{
+        if(o.type==='gif' && o.gif) {
+           if(ms - o.gif.t > o.gif.r.frameInfo(o.gif.f).delay*10) {
+               o.gif.f++; if(o.gif.f>=o.gif.num) o.gif.f=0;
+               o.gif.r.decodeAndBlitFrameRGBA(o.gif.f, o.gif.dat.data);
+               o.gif.ctx.putImageData(o.gif.dat,0,0);
+               o.gif.tex.needsUpdate=true; o.gif.t=ms;
+           }
+        }
+    });
+}
+
+function handleVR(frame, dt) {
+  if(!xrSession) return;
+  const ref = renderer.xr.getReferenceSpace();
+  let lSrc, rSrc;
+  for(const s of xrSession.inputSources) { if(s.handedness==='left') lSrc=s; if(s.handedness==='right') rSrc=s; }
+
+  if(rSrc && rSrc.gripSpace) {
+    const p = frame.getPose(rSrc.gripSpace, ref);
+    if(p) {
+      const pos = p.transform.position; rightRay.position.set(pos.x,pos.y,pos.z); rightRay.quaternion.set(p.transform.orientation.x,p.transform.orientation.y,p.transform.orientation.z,p.transform.orientation.w);
+      rightRay.visible = true;
+      const orig = new THREE.Vector3(pos.x, pos.y, pos.z);
+      const dir = new THREE.Vector3(0,0,-1).applyQuaternion(rightRay.quaternion);
+      
+      // CAMBIO 3: Permitimos raycast a TODOS los objetos (incluido 360)
+      const targets = objects.map(o=>o.mesh);
+      const hits = new THREE.Raycaster(orig, dir, 0, 10).intersectObjects(targets, true);
+      
+      if(hits.length>0) {
+        rayCursor.visible = true; rayCursor.position.copy(hits[0].point);
+        let m = hits[0].object; const found = objects.find(o => { let x=m; while(x){if(x===o.mesh)return true; x=x.parent;} return false; });
+        hoverId = found ? found.id : null;
+      } else { rayCursor.visible=false; hoverId=null; }
+      ctrl.right.currPos = orig; ctrl.right.currQuat = rightRay.quaternion.clone();
+    }
+  }
+
+  if(rSrc && rSrc.gamepad) {
+    const gp = rSrc.gamepad;
+    const trig = gp.buttons[0].pressed; 
+    const grip = gp.buttons[1].pressed;
+    const btnA = gp.buttons[4]?.pressed || gp.buttons[5]?.pressed; 
+
+    if(btnA && !ctrl.right.lastBtn && activeId) {
+        const o = objects.find(x=>x.id===activeId);
+        if(o && o.video) {
+            if(o.video.paused) o.video.play(); else o.video.pause();
+        }
+    }
+    ctrl.right.lastBtn = btnA;
+
+    const sx = gp.axes[2]||0; const sy = gp.axes[3]||0;
+    if(trig && !ctrl.right.lastTrig && hoverId) selectObj(hoverId);
+    ctrl.right.lastTrig = trig;
+
+    if(grip) {
+      const obj = objects.find(o=>o.id===activeId);
+      if(obj) {
+        // CAMBIO 4: Permitir mover/rotar CUALQUIER tipo de objeto
+        if(Math.abs(sx)>0.1) obj.mesh.position.x += sx*dt*2;
+        if(Math.abs(sy)>0.1) obj.mesh.position.z += sy*dt*2;
+        if(ctrl.right.gripped) {
+           const dQ = ctrl.right.currQuat.clone().multiply(ctrl.right.lastQuat.clone().invert());
+           obj.mesh.quaternion.premultiply(dQ);
+           syncUI();
+        }
+        
+        if(lSrc && lSrc.gamepad) {
+           const lGrip = lSrc.gamepad.buttons[1].pressed;
+           const lsy = lSrc.gamepad.axes[3]||0;
+           if(Math.abs(lsy)>0.1) { obj.mesh.position.y -= lsy*dt; syncUI(); }
+           
+           if(lGrip) {
+              const lp = frame.getPose(lSrc.gripSpace, ref);
+              if(lp) {
+                 const lPos = new THREE.Vector3(lp.transform.position.x, lp.transform.position.y, lp.transform.position.z);
+                 const d = lPos.distanceTo(ctrl.right.currPos);
+                 if(!ctrl.left.gripped) { ctrl.gesture.startDist=d; ctrl.gesture.startScale=obj.settings.scale; }
+                 else {
+                    const ns = Math.max(0.1, ctrl.gesture.startScale * (d/ctrl.gesture.startDist));
+                    updateObj('scale', ns); 
+                 }
+              }
+              ctrl.left.gripped = true;
+           } else ctrl.left.gripped = false;
+        }
+      }
+      ctrl.right.gripped = true; ctrl.right.lastQuat.copy(ctrl.right.currQuat);
+    } else ctrl.right.gripped = false;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
