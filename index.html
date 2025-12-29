@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>MR Studio Diamond v2.5 (Smart Chroma)</title>
+  <title>MR Studio Diamond v3.0 (Red Protection)</title>
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
   <style>
     /* ESTILOS DE INTERFAZ (UI LIMPIA) */
@@ -55,7 +55,7 @@
 <div class="loader" id="loader"><div class="spinner"></div><span>CARGANDO...</span></div>
 
 <div class="ui-panel" id="ui">
-  <h2>🥽 MR Studio Diamond v2.5</h2>
+  <h2>🥽 MR Studio Diamond v3</h2>
 
   <div class="sec-head">📂 Archivos <button class="warn" style="padding:4px; font-size:10px; width:auto; flex:0;" onclick="fileInput.click()">+ IMPORTAR</button></div>
   <input type="file" id="fileInput" accept="image/*,video/*,.gif,.glb,.gltf,.fbx,.obj" multiple style="display:none;" />
@@ -94,7 +94,7 @@
     <div class="row"><label>Desfase X</label><input type="range" id="offsetX" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetX">0.0</span></div>
     <div class="row"><label>Desfase Y</label><input type="range" id="offsetY" min="-1" max="1" step="0.01" value="0"><span class="val" id="v_offsetY">0.0</span></div>
 
-    <div class="sec-head">🟩 Chroma Key Pro (Smart)</div>
+    <div class="sec-head">🟩 Chroma Key Pro (Face Protect)</div>
     <div class="row">
       <label>Activar</label> <input type="checkbox" id="chromaActive" style="flex:0; width:18px; height:18px;">
       <label style="margin-left:15px">Invertir</label> <input type="checkbox" id="chromaInvert" style="flex:0; width:18px; height:18px;">
@@ -159,18 +159,17 @@ void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
 }`;
 
-// --- FRAGMENT SHADER: PROTECCIÓN DE PIEL/LABIOS + SMART DESPILL ---
+// --- FRAGMENT SHADER: PROTECCIÓN DE ROJOS (FIX LABIOS/OJOS) ---
 const frag = `
 uniform sampler2D map;
 uniform bool chromaEnabled, chromaInvert;
 uniform vec3 keyColor;
 uniform float similarity, smoothness, opacity;
-// Propiedades de imagen
 uniform float brightness, contrast, saturation, gamma;
 
 varying vec2 vUv;
 
-// Conversiones de color
+// Conversiones
 vec3 rgb2hsv(vec3 c) {
     vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
     vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -198,46 +197,47 @@ void main() {
         vec3 hsv = rgb2hsv(col);
         vec3 kHsv = rgb2hsv(keyColor);
         
-        // 1. DISTANCIA DE COLOR (MÁSCARA)
-        // Usamos una distancia ponderada: El Matiz (Hue) es mucho más importante que la Saturación/Brillo
-        // Esto ayuda a diferenciar labios rojos de un fondo verde oscuro, aunque tengan brillo similar.
+        // 1. CÁLCULO DE DISTANCIA (RELAJADO)
         float hueDist = abs(hsv.x - kHsv.x);
-        if (hueDist > 0.5) hueDist = 1.0 - hueDist; // Corrección circular del hue
-        float dist = sqrt(pow(hueDist * 2.5, 2.0) + pow(hsv.y - kHsv.y, 2.0)); 
+        if (hueDist > 0.5) hueDist = 1.0 - hueDist;
+        float dist = sqrt(pow(hueDist * 2.0, 2.0) + pow(hsv.y - kHsv.y, 2.0)); 
         
         float mask = smoothstep(similarity, similarity + smoothness, dist);
         
+        // 2. PROTECCIÓN DE ROJOS (SOLUCIÓN A OJOS/BOCA)
+        float protection = 0.0;
+        
+        // Si el chroma es Verde
+        if(keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
+            // Proteger si el pixel tiene más rojo que verde
+            protection = (col.r - col.g) * 3.0; 
+        }
+        // Si el chroma es Azul
+        else if(keyColor.b > keyColor.r && keyColor.b > keyColor.g) {
+            protection = (col.r - col.b) * 3.0;
+        }
+
+        // Si es rojizo, forzamos la máscara a ser visible
+        if(protection > 0.0) {
+            mask = clamp(mask + protection, 0.0, 1.0);
+        }
+
         if (!chromaInvert) {
             alpha *= mask;
-
-            // 2. SMART DESPILL (EVITA LABIOS GRISES)
-            // En lugar de desaturar, limitamos el canal dominante del chroma.
-            // Detectamos cuál es el canal dominante del Key Color (R, G o B)
-            float maxRB = max(col.r, col.b);
-            float maxRG = max(col.r, col.g);
-            float maxGB = max(col.g, col.b);
-
-            // Si el Key es VERDE (común), y el pixel tiene mucho verde, lo bajamos al nivel de los otros canales.
-            if (keyColor.g > keyColor.r && keyColor.g > keyColor.b) {
-                if (col.g > maxRB) col.g = mix(col.g, maxRB, 1.0 - mask); 
+            
+            // 3. DESPILL SUAVE
+            if(mask < 0.9) {
+               float maxRB = max(col.r, col.b);
+               float maxRG = max(col.r, col.g);
+               if (keyColor.g > keyColor.r && keyColor.g > keyColor.b && col.g > maxRB) col.g = mix(col.g, maxRB, 1.0-mask); 
+               else if (keyColor.b > keyColor.g && keyColor.b > keyColor.r && col.b > maxRG) col.b = mix(col.b, maxRG, 1.0-mask);
             }
-            // Si el Key es AZUL
-            else if (keyColor.b > keyColor.g && keyColor.b > keyColor.r) {
-                if (col.b > maxRG) col.b = mix(col.b, maxRG, 1.0 - mask);
-            }
-            // Si el Key es ROJO (raro, pero posible)
-            else if (keyColor.r > keyColor.g && keyColor.r > keyColor.b) {
-                if (col.r > maxGB) col.r = mix(col.r, maxGB, 1.0 - mask);
-            }
-
         } else {
             alpha *= (1.0 - mask);
         }
     }
     
-    // Aplicar ajustes de imagen (brillo/contraste) AL FINAL
     col = adjustColor(col);
-    
     gl_FragColor = vec4(col, alpha);
     if (alpha < 0.01) discard; 
 }
